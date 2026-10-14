@@ -15,16 +15,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _pwd = TextEditingController();
-  bool _hide = true;
+ bool _hide = true;
+ bool _loading = false;
   String? _error;
 
-  void _submit() {
-    if (!_form.currentState!.validate()) return;
-    setState(() => _error = null);
-    final err = context.read<AppState>().login(_email.text, _pwd.text);
-    if (err != null) setState(() => _error = err);
+   Future<void> _submit() async {
+    if (_loading || !_form.currentState!.validate()) return;
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
+    final err = await context.read<AppState>().login(_email.text, _pwd.text);
+    if (!mounted) return; // connexion réussie : l'écran est déjà remplacé
+    setState(() {
+      _loading = false;
+      _error = err;
+    });
   }
-
   void _fill(String e, String p) => setState(() {
         _email.text = e;
         _pwd.text = p;
@@ -209,14 +216,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ],
                                 const SizedBox(height: 20),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: _submit,
-                                    icon: const Icon(Icons.login_rounded),
-                                    label: const Text('Se connecter'),
-                                  ),
-                                ),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: FilledButton.icon(
+                                                  onPressed: _loading ? null : _submit,
+                                                  icon: _loading
+                                                      ? const SizedBox(
+                                                          width: 18,
+                                                          height: 18,
+                                                          child: CircularProgressIndicator(
+                                                              strokeWidth: 2))
+                                                      : const Icon(Icons.login_rounded),
+                                                  label: Text(
+                                                      _loading ? 'Connexion…' : 'Se connecter'),
+                                                ),
+                                              ),
                                 const SizedBox(height: 22),
                                 const Divider(),
                                 const SizedBox(height: 12),
