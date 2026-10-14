@@ -1,6 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import 'models.dart';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import '../core/api_client.dart';
+
 
 /// État global de l'application.
 ///
@@ -165,23 +171,37 @@ class AppState extends ChangeNotifier {
   final Set<String> _read = {};
 
   // ───────────────────────── Auth-Service ────────────────────────────────────
-  String? login(String email, String password) {
-    final found = users.where(
-        (u) => u.email == email.trim().toLowerCase() && u.password == password);
-    if (found.isEmpty) return 'Email ou mot de passe incorrect.';
-    if (!found.first.active)
-      return 'Ce compte est suspendu. Contactez l\'administration.';
-    user = found.first;
-    notifyListeners();
-    return null;
+    Future<String?> login(String email, String password) async {
+    try {
+      final json = await ApiClient.instance.login(email, password);
+      user = _userFromApi(json);
+      notifyListeners();
+      return null;
+    } on ApiException catch (e) {
+      if (e.status == 401) return 'Email ou mot de passe incorrect.';
+      return e.message;
+    }
   }
 
+  AppUser _userFromApi(Map<String, dynamic> j) => AppUser(
+        id: '${j['id']}',
+        name: '${j['prenom']} ${j['nom']}'.trim(),
+        email: j['email'] as String,
+        password: '',
+        role: switch (j['role']) {
+          'ADMIN' => Role.admin,
+          'ENSEIGNANT' => Role.teacher,
+          _ => Role.student,
+        },
+        active: j['actif'] as bool? ?? true,
+      );
+
   void logout() {
+    unawaited(ApiClient.instance.logout());
     user = null;
     offline = false;
     notifyListeners();
   }
-
   AppUser? userById(String id) => users.where((u) => u.id == id).firstOrNull;
   String className(String? id) =>
       classes.where((c) => c.id == id).firstOrNull?.name ?? '-';
