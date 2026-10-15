@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 
 import '../core/api_client.dart';
 
-
 /// État global de l'application.
 ///
 /// Il joue le rôle de la couche « services » décrite dans le cahier de cadrage.
@@ -175,6 +174,12 @@ class AppState extends ChangeNotifier {
     try {
       final json = await ApiClient.instance.login(email, password);
       user = _userFromApi(json);
+      try {
+        await loadUsers();
+      } on ApiException {}
+      try {
+        await loadCourses();
+      } on ApiException {}
       notifyListeners();
       return null;
     } on ApiException catch (e) {
@@ -185,15 +190,16 @@ class AppState extends ChangeNotifier {
 
   AppUser _userFromApi(Map<String, dynamic> j) => AppUser(
         id: '${j['id']}',
-        name: '${j['prenom']} ${j['nom']}'.trim(),
+        name: (j['full_name'] as String?)?.trim().isNotEmpty == true
+            ? j['full_name'] as String
+            : '${j['first_name'] ?? ''} ${j['last_name'] ?? ''}'.trim(),
         email: j['email'] as String,
         password: '',
         role: switch (j['role']) {
-          'ADMIN' => Role.admin,
-          'ENSEIGNANT' => Role.teacher,
+          'admin' => Role.admin,
+          'teacher' => Role.teacher,
           _ => Role.student,
         },
-        active: j['actif'] as bool? ?? true,
       );
 
   void logout() {
@@ -202,6 +208,7 @@ class AppState extends ChangeNotifier {
     offline = false;
     notifyListeners();
   }
+
   AppUser? userById(String id) => users.where((u) => u.id == id).firstOrNull;
   String className(String? id) =>
       classes.where((c) => c.id == id).firstOrNull?.name ?? '-';
@@ -222,15 +229,32 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  void createAccount(
-      String name, String email, String pwd, Role role, String? classId) {
-    users.add(AppUser(
-        id: _id('u'),
-        name: name,
-        email: email.toLowerCase(),
-        password: pwd,
-        role: role,
-        classId: role == Role.student ? classId : null));
+  Future<String?> createAccount(
+      String name, String email, String pwd, Role role, String? classId) async {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    final mail = email.trim().toLowerCase();
+    try {
+      await ApiClient.instance.post('/users/', {
+        'username': mail, // le login envoie l'email comme username
+        'email': mail,
+        'first_name': parts.first,
+        'last_name': parts.length > 1 ? parts.sublist(1).join(' ') : '',
+        'password': pwd,
+        'role': role.name, // 'student' | 'teacher' | 'admin'
+      });
+      await loadUsers();
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<void> loadUsers() async {
+    final data = await ApiClient.instance.get('/users/');
+    final list = data is Map ? data['results'] as List : data as List;
+    users
+      ..clear()
+      ..addAll(list.map((j) => _userFromApi(j as Map<String, dynamic>)));
     notifyListeners();
   }
 
@@ -242,13 +266,28 @@ class AppState extends ChangeNotifier {
   // ───────────────────────── Academic-Service ────────────────────────────────
   Course? courseById(String id) => courses.where((c) => c.id == id).firstOrNull;
 
-  List<Course> get myCourses {
-    final u = user!;
-    return switch (u.role) {
-      Role.student => courses.where((c) => c.classId == u.classId).toList(),
-      Role.teacher => courses.where((c) => c.teacherId == u.id).toList(),
-      Role.admin => courses,
-    };
+  List<Course> get myCourses => courses;
+
+  Course _courseFromApi(Map<String, dynamic> j) => Course(
+        id: '${j['id']}',
+        title: j['title'] as String? ?? '',
+        subject: j['code'] as String? ?? '',
+        teacherId: '${j['teacher']}',
+        classId: '',
+        description: j['description'] as String? ?? '',
+      );
+
+ 
+  Future<void> loadCourses() async {
+    final path = user?.role == Role.admin
+        ? '/academic/courses/'
+        : '/academic/courses/mine/';
+    final data = await ApiClient.instance.get(path);
+    final list = data is Map ? data['results'] as List : data as List;
+    courses
+      ..clear()
+      ..addAll(list.map((j) => _courseFromApi(j as Map<String, dynamic>)));
+    notifyListeners();
   }
 
   List<AppUser> studentsOfTeacher(String teacherId) {
@@ -264,24 +303,32 @@ class AppState extends ChangeNotifier {
     if (user?.role != Role.teacher) return;
     _addCourse(title, subject, classId, user!.id, desc);
   }
-
-  bool createAcademicCourse(String title, String subject, String classId,
-      String teacherId, String desc) {
+  Future<String?> createAcademicCourse(String title, String subject,
+      String classId, String teacherId, String desc) async {
+    if (user?.role != Role.admin) return 'Action réservée à l\'administrateur.';
     final cleanTitle = title.trim();
-    final cleanSubject = subject.trim();
-    final teacher = userById(teacherId);
-    if (user?.role != Role.admin ||
-        cleanTitle.isEmpty ||
-        cleanSubject.isEmpty ||
-        !classes.any((c) => c.id == classId) ||
-        teacher == null ||
-        teacher.role != Role.teacher ||
-        !teacher.active) {
-      return false;
+    final code = subject.trim().toUpperCase().replaceAll(' ', '');
+    if (cleanTitle.isEmpty || code.isEmpty) return 'Titre et code obligatoires.';
+    final teacher = int.tryParse(teacherId);
+    if (teacher == null) return 'Choisissez un enseignant.';
+    try {
+      final years =
+          await ApiClient.instance.get('/academic/years/?is_current=true');
+      final yl = years is Map ? years['results'] as List : years as List;
+      await ApiClient.instance.post('/academic/courses/', {
+        'code': code,
+        'title': cleanTitle,
+        'description': desc.trim(),
+        'teacher': teacher,
+        if (yl.isNotEmpty) 'academic_year': yl.first['id'],
+        'is_published': true,
+      });
+      await loadCourses();
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
-    _addCourse(cleanTitle, cleanSubject, classId, teacherId, desc.trim());
-    return true;
-  }
+  }   
 
   void _addCourse(String title, String subject, String classId,
       String teacherId, String desc) {
@@ -585,4 +632,18 @@ class AppState extends ChangeNotifier {
     }
     return out;
   }
+  Future<String?> enrollStudent(String studentId, String courseId) async {
+  if (user?.role != Role.admin) return 'Action réservée à l\'administrateur.';
+  try {
+    await ApiClient.instance.post('/academic/enrollments/', {
+      'student': int.parse(studentId),
+      'course': int.parse(courseId),
+    });
+    return null;
+  } on ApiException catch (e) {
+    return e.message;
+  }
 }
+
+}
+

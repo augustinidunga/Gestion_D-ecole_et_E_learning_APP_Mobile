@@ -21,29 +21,40 @@ class _AdminAccountsState extends State<AdminAccounts> {
     _search.dispose();
     super.dispose();
   }
-
-  Future<void> _create() async {
-    final s = context.read<AppState>();
-    final r = await askForm(context, 'Créer un compte', [
-      const Fld('name', 'Nom complet'),
-      const Fld('email', 'Email'),
-      const Fld('pwd', 'Mot de passe initial', obscure: true),
-      const Fld('role', 'Rôle', options: {'student': 'Étudiant', 'teacher': 'Enseignant', 'admin': 'Administrateur'}),
-      Fld('class', 'Classe (étudiants)', options: {for (final c in s.classes) c.id: c.name}),
-    ], ok: 'Créer');
-    if (r == null) return;
-    if (r['name']!.isEmpty || !r['email']!.contains('@') || r['pwd']!.length < 6) {
-      if (mounted) toast(context, 'Nom, email valide et mot de passe (6 caractères min.) requis.');
-      return;
+Future<void> _create() async {
+  final s = context.read<AppState>();
+  final r = await askForm(context, 'Créer un compte', [
+    const Fld('name', 'Nom complet'),
+    const Fld('email', 'Email'),
+    const Fld('pwd', 'Mot de passe initial', obscure: true),
+    const Fld('role', 'Rôle', options: {
+      'student': 'Étudiant',
+      'teacher': 'Enseignant',
+      'admin': 'Administrateur'
+    }),
+    Fld('class', 'Classe (étudiants)',
+        options: {for (final c in s.classes) c.id: c.name}),
+  ], ok: 'Créer');
+  if (r == null) return;
+  if (r['name']!.trim().isEmpty ||
+      !r['email']!.contains('@') ||
+      r['pwd']!.length < 6) {
+    if (mounted) {
+      toast(context,
+          'Nom, email valide et mot de passe (6 caractères min.) requis.');
     }
-    if (s.users.any((u) => u.email == r['email']!.toLowerCase())) {
-      if (mounted) toast(context, 'Cet email existe déjà.');
-      return;
-    }
-    s.createAccount(r['name']!, r['email']!, r['pwd']!, Role.values.byName(r['role']!), r['class']);
-    if (mounted) toast(context, 'Compte créé.');
+    return;
   }
-
+  final err = await s.createAccount(
+    r['name']!,
+    r['email']!,
+    r['pwd']!,
+    Role.values.byName(r['role']!),
+    r['class'],
+  );
+  if (!mounted) return;
+  toast(context, err ?? 'Compte créé.');
+}
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();

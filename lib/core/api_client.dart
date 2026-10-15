@@ -95,10 +95,10 @@ class ApiClient {
 
   // ───────────── Auth-Service ─────────────
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final data = await _send('POST', '/auth/login/', {
-      'email': email.trim().toLowerCase(),
-      'password': password,
-    }) as Map<String, dynamic>;
+  final data = await _send('POST', '/auth/login/', {
+  'username': email.trim().toLowerCase(),
+  'password': password,
+}) as Map<String, dynamic>;
     _access = data['access'] as String;
     _refresh = data['refresh'] as String;
     return data['user'] as Map<String, dynamic>;

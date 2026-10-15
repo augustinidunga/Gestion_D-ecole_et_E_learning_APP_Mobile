@@ -43,21 +43,16 @@ class AdminAcademic extends StatelessWidget {
       const Fld('description', 'Description', multiline: true),
     ], ok: 'Créer le cours');
     if (r == null) return;
-    final created = s.createAcademicCourse(
-      r['title']!,
-      r['subject']!,
-      r['class']!,
-      r['teacher']!,
-      r['description']!,
-    );
-    if (context.mounted) {
-      toast(
-        context,
-        created
-            ? 'Cours créé et publié auprès de la classe.'
-            : 'Vérifiez le nom, la matière, la classe et l’enseignant.',
-      );
-    }
+    final err = await s.createAcademicCourse(
+  r['title']!,
+  r['subject']!,
+  r['class']!,
+  r['teacher']!,
+  r['description']!,
+);
+  if (context.mounted) {
+  toast(context, err ?? 'Cours créé.');
+}
   }
 
   @override
