@@ -15,11 +15,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _pwd = TextEditingController();
- bool _hide = true;
- bool _loading = false;
+  bool _hide = true;
+  bool _loading = false;
   String? _error;
 
-   Future<void> _submit() async {
+  Future<void> _submit() async {
     if (_loading || !_form.currentState!.validate()) return;
     setState(() {
       _error = null;
@@ -32,11 +32,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = err;
     });
   }
-  void _fill(String e, String p) => setState(() {
-        _email.text = e;
-        _pwd.text = p;
-        _error = null;
-      });
 
   @override
   void dispose() {
@@ -70,10 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24),
+                          width: 84,
+                          height: 84,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(26),
                             gradient: const LinearGradient(
                               colors: [AppColors.primary, AppColors.dark],
                               begin: Alignment.topLeft,
@@ -87,42 +82,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ],
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 58,
-                                height: 58,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: .14),
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: const Icon(Icons.school_rounded,
-                                    color: Colors.white, size: 31),
-                              ),
-                              const SizedBox(width: 16),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppConfig.appName,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 25,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Gestion scolaire et apprentissage',
-                                      style:
-                                          TextStyle(color: Colors.white70),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: const Icon(Icons.school_rounded,
+                              color: Colors.white, size: 44),
                         ),
                         const SizedBox(height: 20),
                         AppCard(
@@ -132,15 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Connexion',
-                                  style: TextStyle(
-                                    fontSize: 23,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.text,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
                                 const Text(
                                   'Accédez à votre espace sécurisé.',
                                   style: TextStyle(color: AppColors.muted),
@@ -160,7 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
                                   decoration: const InputDecoration(
                                     labelText: 'Adresse email',
-                                    prefixIcon: Icon(Icons.mail_outline_rounded),
+                                    prefixIcon:
+                                        Icon(Icons.mail_outline_rounded),
                                   ),
                                 ),
                                 const SizedBox(height: 14),
@@ -216,61 +169,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ],
                                 const SizedBox(height: 20),
-                                              SizedBox(
-                                                width: double.infinity,
-                                                child: FilledButton.icon(
-                                                  onPressed: _loading ? null : _submit,
-                                                  icon: _loading
-                                                      ? const SizedBox(
-                                                          width: 18,
-                                                          height: 18,
-                                                          child: CircularProgressIndicator(
-                                                              strokeWidth: 2))
-                                                      : const Icon(Icons.login_rounded),
-                                                  label: Text(
-                                                      _loading ? 'Connexion…' : 'Se connecter'),
-                                                ),
-                                              ),
-                                const SizedBox(height: 22),
-                                const Divider(),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'Accès de démonstration',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.text,
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    onPressed: _loading ? null : _submit,
+                                    icon: _loading
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2))
+                                        : const Icon(Icons.login_rounded),
+                                    label: Text(_loading
+                                        ? 'Connexion…'
+                                        : 'Se connecter'),
                                   ),
-                                ),
-                                const SizedBox(height: 10),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    ActionChip(
-                                      avatar: const Icon(
-                                          Icons.person_outline_rounded,
-                                          size: 18),
-                                      label: const Text('Étudiant'),
-                                      onPressed: () => _fill(
-                                          'etudiant@ecole.edu', 'etud123'),
-                                    ),
-                                    ActionChip(
-                                      avatar: const Icon(
-                                          Icons.cast_for_education_rounded,
-                                          size: 18),
-                                      label: const Text('Enseignant'),
-                                      onPressed: () =>
-                                          _fill('prof@ecole.edu', 'prof123'),
-                                    ),
-                                    ActionChip(
-                                      avatar: const Icon(
-                                          Icons.admin_panel_settings_outlined,
-                                          size: 18),
-                                      label: const Text('Administrateur'),
-                                      onPressed: () => _fill(
-                                          'admin@ecole.edu', 'admin123'),
-                                    ),
-                                  ],
                                 ),
                               ],
                             ),
