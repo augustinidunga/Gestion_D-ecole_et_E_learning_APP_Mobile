@@ -248,14 +248,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       onPressed: () =>
                                           _fill('prof@ecole.edu', 'prof123'),
                                     ),
-                                    ActionChip(
-                                      avatar: const Icon(
-                                          Icons.admin_panel_settings_outlined,
-                                          size: 18),
-                                      label: const Text('Administrateur'),
-                                      onPressed: () => _fill(
-                                          'admin@ecole.edu', 'admin123'),
-                                    ),
+                                    //ActionChip(
+                                     // avatar: const Icon(
+                                          //Icons.admin_panel_settings_outlined,
+                                          //size: 18),
+                                      //label: const Text('Administrateur'),
+                                      //onPressed: () => _fill(
+                                         // 'admin@ecole.edu', 'admin123'),
+                                    //),
                                   ],
                                 ),
                               ],
