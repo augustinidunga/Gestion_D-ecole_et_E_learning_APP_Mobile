@@ -41,32 +41,53 @@ class TeacherAssessments extends StatelessWidget {
     final s = context.watch<AppState>();
     final list = s.myQuizzes;
     return Scaffold(
-      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         onPressed: s.myCourses.isEmpty ? null : () => _create(context),
         icon: const Icon(Icons.add),
         label: const Text('Nouveau quiz'),
       ),
       body: list.isEmpty
-          ? const EmptyState(Icons.quiz, 'Aucun quiz créé.')
-          : ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
-              for (final q in list)
-                AppCard(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QuizResults(quiz: q))),
-                  child: Row(children: [
-                    const IconBadge(Icons.quiz_rounded, color: AppColors.warn),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(q.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-                        Text('${s.courseById(q.courseId)?.title} • échéance ${fmtDate(q.due)}',
-                            style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                      ]),
+          ? const EmptyState(Icons.quiz, 'Aucun quiz créé.', 'Créez votre premier quiz.')
+          : ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                for (final q in list)
+                  AppCardElevated(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => QuizResults(quiz: q))),
+                    child: Row(
+                      children: [
+                        const IconBadge(Icons.quiz_rounded, color: AppColors.warn),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                q.title,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800),
+                              ),
+                              Text(
+                                '${s.courseById(q.courseId)?.title} • échéance ${fmtDate(q.due)}',
+                                style: const TextStyle(
+                                    color: AppColors.textMuted, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        StatusChip(
+                            '${s.attempts.where((a) => a.quizId == q.id && a.synced).length} rendu(s)',
+                            AppColors.primary),
+                      ],
                     ),
-                    StatusChip('${s.attempts.where((a) => a.quizId == q.id && a.synced).length} rendu(s)', AppColors.primary),
-                  ]),
-                ),
-            ]),
+                  ),
+              ],
+            ),
     );
   }
 }
@@ -82,43 +103,84 @@ class QuizResults extends StatelessWidget {
     final studs = s.students.where((e) => e.classId == course.classId).toList();
     final diff = s.difficultyOf(quiz);
     return Scaffold(
-      appBar: AppBar(title: Text(quiz.title, style: const TextStyle(fontSize: 16))),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        const SectionTitle('Soumissions des étudiants'),
-        for (final st in studs)
-          Builder(builder: (_) {
-            final a = s.attemptOf(quiz.id, st.id);
-            return AppCard(
-              child: Row(children: [
-                CircleAvatar(backgroundColor: AppColors.primary.withValues(alpha: .12), child: Text(st.initials)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(st.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    if (a != null && a.warnings > 0)
-                      Text('${a.warnings} alerte(s) anti-triche',
-                          style: const TextStyle(color: AppColors.danger, fontSize: 12)),
-                  ]),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: [
+          const SectionTitle('Soumissions des étudiants'),
+          for (final st in studs)
+            Builder(builder: (_) {
+              final a = s.attemptOf(quiz.id, st.id);
+              return AppCardElevated(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppColors.primary.withOpacity(0.12),
+                      child: Text(st.initials),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            st.name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700),
+                          ),
+                          if (a != null && a.warnings > 0)
+                            Text(
+                              '${a.warnings} alerte(s) anti-triche',
+                              style: const TextStyle(
+                                  color: AppColors.danger, fontSize: 12),
+                            ),
+                        ],
+                      ),
+                    ),
+                    a == null || !a.synced
+                        ? const StatusChip('Non rendu', AppColors.textMuted)
+                        : StatusChip(
+                            '${a.score.toStringAsFixed(1)}/20', AppColors.accent),
+                  ],
                 ),
-                a == null || !a.synced
-                    ? const StatusChip('Non rendu', AppColors.muted)
-                    : StatusChip('${a.score.toStringAsFixed(1)}/20', AppColors.accent),
-              ]),
-            );
-          }),
-        const SectionTitle('Analyse par question'),
-        for (var i = 0; i < quiz.questions.length; i++)
-          AppCard(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${i + 1}. ${quiz.questions[i].text}', style: const TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(value: diff[i], color: AppColors.danger, minHeight: 6),
-              const SizedBox(height: 4),
-              Text('${(diff[i] * 100).round()} % d\'erreurs',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-            ]),
-          ),
-      ]),
+              );
+            }),
+          const SectionTitle('Analyse par question'),
+          for (var i = 0; i < quiz.questions.length; i++)
+            AppCardElevated(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${i + 1}. ${quiz.questions[i].text}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 4, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: LinearProgressIndicator(
+                      value: diff[i],
+                      minHeight: 6,
+                      color: AppColors.danger,
+                      backgroundColor: Colors.transparent,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(diff[i] * 100).round()} % d\'erreurs',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

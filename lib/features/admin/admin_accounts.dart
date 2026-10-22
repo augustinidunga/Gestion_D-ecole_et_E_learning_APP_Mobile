@@ -28,7 +28,11 @@ class _AdminAccountsState extends State<AdminAccounts> {
       const Fld('name', 'Nom complet'),
       const Fld('email', 'Email'),
       const Fld('pwd', 'Mot de passe initial', obscure: true),
-      const Fld('role', 'Rôle', options: {'student': 'Étudiant', 'teacher': 'Enseignant', 'admin': 'Administrateur'}),
+      const Fld('role', 'Rôle', options: {
+        'student': 'Étudiant',
+        'teacher': 'Enseignant',
+        'admin': 'Administrateur',
+      }),
       Fld('class', 'Classe (étudiants)', options: {for (final c in s.classes) c.id: c.name}),
     ], ok: 'Créer');
     if (r == null) return;
@@ -40,7 +44,8 @@ class _AdminAccountsState extends State<AdminAccounts> {
       if (mounted) toast(context, 'Cet email existe déjà.');
       return;
     }
-    s.createAccount(r['name']!, r['email']!, r['pwd']!, Role.values.byName(r['role']!), r['class']);
+    s.createAccount(
+        r['name']!, r['email']!, r['pwd']!, Role.values.byName(r['role']!), r['class']);
     if (mounted) toast(context, 'Compte créé.');
   }
 
@@ -59,96 +64,151 @@ class _AdminAccountsState extends State<AdminAccounts> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
-          onPressed: _create, icon: const Icon(Icons.person_add), label: const Text('Nouveau compte')),
-      body: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: TextField(
-            controller: _search,
-            onChanged: (_) => setState(() {}),
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText: 'Rechercher un nom, un email ou une classe',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: _search.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Effacer la recherche',
-                      onPressed: () {
-                        _search.clear();
-                        setState(() {});
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        onPressed: _create,
+        icon: const Icon(Icons.person_add_rounded),
+        label: const Text('Nouveau compte'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher un nom, un email ou une classe',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  prefixIconColor: AppColors.primary,
+                  suffixIcon: _search.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Effacer la recherche',
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: () {
+                            _search.clear();
+                            setState(() {});
+                          },
+                        ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.7)),
+                ),
+              ),
             ),
           ),
-        ),
-        SizedBox(
-          height: 54,
-          child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), children: [
-            Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(label: const Text('Tous'), selected: _filter == null, onSelected: (_) => setState(() => _filter = null))),
-            for (final r in Role.values)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(label: Text(r.label), selected: _filter == r, onSelected: (_) => setState(() => _filter = r)),
-              ),
-          ]),
-        ),
-        Expanded(
-          child: list.isEmpty
-              ? const EmptyState(Icons.person_search_rounded, 'Aucun compte ne correspond à la recherche.')
-              : ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 90), children: [
-                  for (final u in list)
-                    AppCard(
-                      child: Row(children: [
-                        CircleAvatar(
-                          backgroundColor:
-                              (u.active ? AppColors.primary : AppColors.muted)
-                                  .withValues(alpha: .12),
-                          child: Text(
-                            u.initials,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            height: 54,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: FilterChip(
+                    label: const Text('Tous'),
+                    selected: _filter == null,
+                    onSelected: (_) => setState(() => _filter = null),
+                    selectedColor: AppColors.primary.withOpacity(0.15),
+                    labelStyle: TextStyle(
+                      color: _filter == null ? AppColors.primary : AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                for (final r in Role.values)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: FilterChip(
+                      label: Text(r.label),
+                      selected: _filter == r,
+                      onSelected: (_) => setState(() => _filter = r),
+                      selectedColor: AppColors.primary.withOpacity(0.15),
+                      labelStyle: TextStyle(
+                        color: _filter == r ? AppColors.primary : AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: list.isEmpty
+                ? const EmptyState(
+                    Icons.person_search_rounded,
+                    'Aucun compte ne correspond à la recherche.',
+                    'Essayez une recherche différente.')
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+                    children: [
+                      for (final u in list)
+                        AppCardElevated(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: Row(
                             children: [
-                              Text(u.name,
-                                  style: const TextStyle(fontWeight: FontWeight.w800)),
-                              const SizedBox(height: 2),
-                              Text(u.email,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              CircleAvatar(
+                                backgroundColor:
+                                    (u.active ? AppColors.primary : AppColors.textMuted)
+                                        .withOpacity(0.12),
+                                child: Text(
+                                  u.initials,
                                   style: const TextStyle(
-                                      color: AppColors.muted, fontSize: 12)),
-                              Text(
-                                '${u.role.label}${u.classId != null ? ' • ${s.className(u.classId)}' : ''}',
-                                style: const TextStyle(
-                                    color: AppColors.muted, fontSize: 12),
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      u.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      u.email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          color: AppColors.textMuted, fontSize: 13),
+                                    ),
+                                    Text(
+                                      '${u.role.label}${u.classId != null ? ' • ${s.className(u.classId)}' : ''}',
+                                      style: const TextStyle(
+                                          color: AppColors.textMuted, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (u.id != s.user!.id)
+                                Switch(
+                                  value: u.active,
+                                  onChanged: (_) => s.toggleActive(u),
+                                )
+                              else
+                                const Icon(Icons.verified_user_rounded,
+                                    color: AppColors.accent),
                             ],
                           ),
                         ),
-                        if (u.id != s.user!.id)
-                          Switch(
-                            value: u.active,
-                            onChanged: (_) => s.toggleActive(u),
-                          )
-                        else
-                          const Icon(Icons.verified_user_rounded,
-                              color: AppColors.accent),
-                      ]),
-                    ),
-                ]),
-        ),
-      ]),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

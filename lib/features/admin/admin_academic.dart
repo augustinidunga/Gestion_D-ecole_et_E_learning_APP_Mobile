@@ -6,7 +6,6 @@ import '../../core/widgets.dart';
 import '../../data/app_state.dart';
 import '../../data/models.dart';
 
-/// Classes, matières/cours et emplois du temps.
 class AdminAcademic extends StatelessWidget {
   const AdminAcademic({super.key});
 
@@ -66,6 +65,8 @@ class AdminAcademic extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         onPressed: () async {
           final r = await askForm(context, 'Ajouter un créneau', [
             Fld('class', 'Classe', options: {for (final c in s.classes) c.id: c.name}),
@@ -89,62 +90,95 @@ class AdminAcademic extends StatelessWidget {
         icon: const Icon(Icons.event),
         label: const Text('Créneau'),
       ),
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
-        Row(children: [
-          StatTile(Icons.class_rounded, 'Classes', '${s.classes.length}'),
-          StatTile(Icons.menu_book_rounded, 'Cours', '${s.courses.length}', color: AppColors.accent),
-        ]),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () => _createClass(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Nouvelle classe'),
-            ),
-            FilledButton.icon(
-              onPressed: () => _createCourse(context),
-              icon: const Icon(Icons.menu_book_rounded),
-              label: const Text('Nouveau cours'),
-            ),
-          ],
-        ),
-        const SectionTitle('Classes de l’établissement'),
-        for (final c in s.classes)
-          AppCard(
-            child: Row(children: [
-              const IconBadge(Icons.class_, color: AppColors.accent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-                  Text('${s.students.where((e) => e.classId == c.id).length} étudiant(s) • '
-                      '${s.courses.where((k) => k.classId == c.id).length} matière(s) • '
-                      '${s.schedule.where((x) => x.classId == c.id).length} créneaux/semaine',
-                      style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                ]),
-              ),
-            ]),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: [
+          Row(
+            children: [
+              StatTile(Icons.class_rounded, 'Classes', '${s.classes.length}'),
+              StatTile(Icons.menu_book_rounded, 'Cours', '${s.courses.length}',
+                  color: AppColors.accent),
+            ],
           ),
-        const SectionTitle('Cours et enseignants'),
-        for (final c in s.courses)
-          AppCard(
-            child: Row(children: [
-              const IconBadge(Icons.menu_book_rounded),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  Text('${s.className(c.classId)} • ${s.userById(c.teacherId)?.name ?? ''}',
-                      style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                ]),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ActionButton(
+                icon: Icons.add_rounded,
+                label: 'Nouvelle classe',
+                onPressed: () => _createClass(context),
+                color: AppColors.primary,
+                outlined: true,
               ),
-              StatusChip('${c.lessons.length} contenus', AppColors.primary),
-            ]),
+              ActionButton(
+                icon: Icons.menu_book_rounded,
+                label: 'Nouveau cours',
+                onPressed: () => _createCourse(context),
+                color: AppColors.accent,
+              ),
+            ],
           ),
-      ]),
+          const SectionTitle('Classes de l’établissement'),
+          for (final c in s.classes)
+            AppCardElevated(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  const IconBadge(Icons.class_, color: AppColors.accent),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(
+                          '${s.students.where((e) => e.classId == c.id).length} étudiant(s) • '
+                          '${s.courses.where((k) => k.classId == c.id).length} matière(s) • '
+                          '${s.schedule.where((x) => x.classId == c.id).length} créneaux/semaine',
+                          style: const TextStyle(
+                              color: AppColors.textMuted, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SectionTitle('Cours et enseignants'),
+          for (final c in s.courses)
+            AppCardElevated(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  const IconBadge(Icons.menu_book_rounded),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          c.title,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          '${s.className(c.classId)} • ${s.userById(c.teacherId)?.name ?? ''}',
+                          style: const TextStyle(
+                              color: AppColors.textMuted, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  StatusChip(
+                    '${c.lessons.length} contenus',
+                    AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

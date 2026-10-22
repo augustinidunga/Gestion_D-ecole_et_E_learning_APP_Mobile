@@ -29,3 +29,4 @@ class EcoleApp extends StatelessWidget {
     );
   }
 }
+

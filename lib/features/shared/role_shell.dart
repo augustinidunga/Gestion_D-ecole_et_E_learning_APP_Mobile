@@ -12,8 +12,6 @@ class NavTab {
   const NavTab(this.label, this.icon, this.activeIcon, this.page);
 }
 
-/// Coquille commune : barre du haut (notifications, mode hors connexion)
-/// + navigation inférieure propre à chaque profil.
 class RoleShell extends StatefulWidget {
   final List<NavTab> tabs;
   const RoleShell({super.key, required this.tabs});
@@ -30,41 +28,61 @@ class _RoleShellState extends State<RoleShell> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 72,
-        title: Row(children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(12),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border(
+              bottom: BorderSide(color: AppColors.border.withOpacity(0.5)),
             ),
-            child: const Icon(Icons.school_rounded, color: AppColors.primary),
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'EduConnect',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.school_rounded,
+                  color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'EduConnect',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                Text(widget.tabs[_i].label),
-              ],
+                  Text(
+                    widget.tabs[_i].label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ]),
+          ],
+        ),
         actions: [
           if (s.offline)
             IconButton(
               tooltip: 'Mode hors connexion',
               onPressed: null,
-              icon: const Icon(Icons.cloud_off_rounded, color: AppColors.warn),
+              icon: const Icon(Icons.cloud_off_rounded,
+                  color: AppColors.warn),
             ),
           IconButton(
             tooltip: 'Notifications',
@@ -82,14 +100,14 @@ class _RoleShellState extends State<RoleShell> {
             tooltip: 'Profil et paramètres',
             onPressed: () => setState(() => _i = widget.tabs.length - 1),
             icon: CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primary.withValues(alpha: .1),
+              radius: 17,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
               child: Text(
                 s.user!.initials,
                 style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w800,
-                  fontSize: 11,
+                  fontSize: 12,
                 ),
               ),
             ),
@@ -98,13 +116,29 @@ class _RoleShellState extends State<RoleShell> {
         ],
       ),
       body: IndexedStack(index: _i, children: [for (final t in widget.tabs) t.page]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() => _i = v),
-        destinations: [
-          for (final t in widget.tabs)
-            NavigationDestination(icon: Icon(t.icon), selectedIcon: Icon(t.activeIcon), label: t.label),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.dark.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _i,
+          onDestinationSelected: (v) => setState(() => _i = v),
+          destinations: [
+            for (final t in widget.tabs)
+              NavigationDestination(
+                icon: Icon(t.icon),
+                selectedIcon: Icon(t.activeIcon),
+                label: t.label,
+              ),
+          ],
+        ),
       ),
     );
   }

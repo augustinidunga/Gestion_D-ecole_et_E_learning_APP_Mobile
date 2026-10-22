@@ -17,11 +17,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _pwd = TextEditingController();
   bool _hide = true;
   String? _error;
+  bool _loading = false;
 
-  void _submit() {
+  void _submit() async {
     if (!_form.currentState!.validate()) return;
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
     final err = context.read<AppState>().login(_email.text, _pwd.text);
+    if (!mounted) return;
+    setState(() => _loading = false);
     if (err != null) setState(() => _error = err);
   }
 
@@ -42,9 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFF4F7FB), Color(0xFFEDF2F8)],
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.bg, AppColors.bg],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -52,74 +58,71 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12),
               child: ConstrainedBox(
-                constraints:
-                    BoxConstraints(minHeight: constraints.maxHeight - 40),
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 48,
+                ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 500),
+                    constraints: const BoxConstraints(maxWidth: 430),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(32),
                             gradient: const LinearGradient(
-                              colors: [AppColors.primary, AppColors.dark],
+                              colors: [AppColors.primary, AppColors.primaryLight],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.dark.withValues(alpha: .16),
-                                blurRadius: 24,
-                                offset: const Offset(0, 10),
+                                color: AppColors.primary.withOpacity(0.35),
+                                blurRadius: 32,
+                                offset: const Offset(0, 14),
                               ),
                             ],
                           ),
-                          child: Row(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                width: 58,
-                                height: 58,
+                                width: 40,
+                                height: 40,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: .14),
-                                  borderRadius: BorderRadius.circular(18),
+                                  color: Colors.white.withOpacity(0.14),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: const Icon(Icons.school_rounded,
-                                    color: Colors.white, size: 31),
+                                    color: Colors.white, size: 22),
                               ),
-                              const SizedBox(width: 16),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppConfig.appName,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 25,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Gestion scolaire et apprentissage',
-                                      style:
-                                          TextStyle(color: Colors.white70),
-                                    ),
-                                  ],
+                              const SizedBox(height: 6),
+                              const Text(
+                                AppConfig.appName,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
                                 ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Gestion scolaire et apprentissage',
+                                style: TextStyle(color: Colors.white.withOpacity(0.85)),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 20),
                         AppCard(
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(20),
+                          elevation: 1,
                           child: Form(
                             key: _form,
                             child: Column(
@@ -128,22 +131,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const Text(
                                   'Connexion',
                                   style: TextStyle(
-                                    fontSize: 23,
+                                    fontSize: 24,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.text,
                                   ),
                                 ),
-                                const SizedBox(height: 5),
+                                const SizedBox(height: 6),
                                 const Text(
                                   'Accédez à votre espace sécurisé.',
-                                  style: TextStyle(color: AppColors.muted),
+                                  style: TextStyle(color: AppColors.textMuted),
                                 ),
-                                const SizedBox(height: 22),
-                                TextFormField(
+                                const SizedBox(height: 10),
+                                AppTextFormField(
                                   controller: _email,
+                                  label: 'Adresse email',
+                                  icon: Icons.mail_outline_rounded,
                                   keyboardType: TextInputType.emailAddress,
                                   textInputAction: TextInputAction.next,
-                                  autofillHints: const [AutofillHints.username],
                                   validator: (value) {
                                     final email = value?.trim() ?? '';
                                     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -151,111 +155,106 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? null
                                         : 'Saisissez une adresse email valide.';
                                   },
-                                  decoration: const InputDecoration(
-                                    labelText: 'Adresse email',
-                                    prefixIcon: Icon(Icons.mail_outline_rounded),
-                                  ),
                                 ),
-                                const SizedBox(height: 14),
-                                TextFormField(
+                                AppTextFormField(
                                   controller: _pwd,
+                                  label: 'Mot de passe',
+                                  icon: Icons.lock_outline_rounded,
                                   obscureText: _hide,
                                   textInputAction: TextInputAction.done,
-                                  autofillHints: const [AutofillHints.password],
                                   onFieldSubmitted: (_) => _submit(),
                                   validator: (value) => (value ?? '').isEmpty
                                       ? 'Saisissez votre mot de passe.'
                                       : null,
-                                  decoration: InputDecoration(
-                                    labelText: 'Mot de passe',
-                                    prefixIcon:
-                                        const Icon(Icons.lock_outline_rounded),
-                                    suffixIcon: IconButton(
-                                      tooltip: _hide
-                                          ? 'Afficher le mot de passe'
-                                          : 'Masquer le mot de passe',
-                                      icon: Icon(_hide
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined),
-                                      onPressed: () =>
-                                          setState(() => _hide = !_hide),
-                                    ),
+                                  suffixIcon: IconButton(
+                                    tooltip: _hide
+                                        ? 'Afficher le mot de passe'
+                                        : 'Masquer le mot de passe',
+                                    icon: Icon(_hide
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined),
+                                    onPressed: () =>
+                                        setState(() => _hide = !_hide),
                                   ),
                                 ),
                                 if (_error != null) ...[
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                                   Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(
-                                      color: AppColors.danger
-                                          .withValues(alpha: .08),
-                                      borderRadius: BorderRadius.circular(12),
+                                      color: AppColors.danger.withOpacity(0.06),
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.error_outline_rounded,
-                                            color: AppColors.danger, size: 19),
-                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.danger.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(
+                                              Icons.error_outline_rounded,
+                                              color: AppColors.danger,
+                                              size: 18),
+                                        ),
+                                        const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
                                             _error!,
                                             style: const TextStyle(
-                                                color: AppColors.danger),
+                                                color: AppColors.danger,
+                                                fontSize: 13),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 10),
                                 SizedBox(
                                   width: double.infinity,
-                                  child: FilledButton.icon(
+                                  child: AppFormButton(
                                     onPressed: _submit,
-                                    icon: const Icon(Icons.login_rounded),
-                                    label: const Text('Se connecter'),
-                                  ),
-                                ),
-                                const SizedBox(height: 22),
-                                const Divider(),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'Accès de démonstration',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.text,
+                                    text: _loading ? '' : 'Se connecter',
+                                    icon: Icons.login_rounded,
+                                    loading: _loading,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
+                                const Divider(),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Accès de démonstration',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.text,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
                                   children: [
-                                    ActionChip(
-                                      avatar: const Icon(
-                                          Icons.person_outline_rounded,
-                                          size: 18),
-                                      label: const Text('Étudiant'),
-                                      onPressed: () => _fill(
-                                          'etudiant@ecole.edu', 'etud123'),
+                                    Expanded(
+                                      child: ActionButton(
+                                        icon: Icons.person_outline_rounded,
+                                        label: 'Étudiant',
+                                        onPressed: () => _fill('etudiant@ecole.edu', 'etud123'),
+                                        width: double.infinity,
+                                        outlined: true,
+                                      ),
                                     ),
-                                    ActionChip(
-                                      avatar: const Icon(
-                                          Icons.cast_for_education_rounded,
-                                          size: 18),
-                                      label: const Text('Enseignant'),
-                                      onPressed: () =>
-                                          _fill('prof@ecole.edu', 'prof123'),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: ActionButton(
+                                        icon: Icons.cast_for_education_rounded,
+                                        label: 'Enseignant',
+                                        onPressed: () => _fill('prof@ecole.edu', 'prof123'),
+                                        width: double.infinity,
+                                        outlined: true,
+                                      ),
                                     ),
-                                    //ActionChip(
-                                     // avatar: const Icon(
-                                          //Icons.admin_panel_settings_outlined,
-                                          //size: 18),
-                                      //label: const Text('Administrateur'),
-                                      //onPressed: () => _fill(
-                                         // 'admin@ecole.edu', 'admin123'),
-                                    //),
                                   ],
                                 ),
                               ],
@@ -274,3 +273,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+
