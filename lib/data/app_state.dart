@@ -66,11 +66,14 @@ class AppState extends ChangeNotifier {
         classId: 'c1',
         description:
             'Structures de contrôle, tableaux, complexité et récursivité.',
-        lessons: const [
-          Lesson('l1', 'Introduction aux algorithmes', true, '12 min'),
-          Lesson('l2', 'Boucles et conditions', true, '18 min'),
-          Lesson('l3', 'Support de cours - Chapitre 1', false, '1,2 Mo'),
-        ]),
+          lessons: const [
+            Lesson('l1', 'Introduction aux algorithmes', true, '12 min',
+                url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
+            Lesson('l2', 'Boucles et conditions', true, '18 min',
+                url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+                meetingLink: 'https://meet.google.com/abc-defg-hij'),
+            Lesson('l3', 'Support de cours - Chapitre 1', false, '1,2 Mo'),
+          ]),
     Course(
         id: 'k2',
         title: 'Bases de données',
@@ -163,6 +166,38 @@ class AppState extends ChangeNotifier {
   final Set<String> downloaded = {};
   final Set<String> doneLessons = {};
   final Set<String> _read = {};
+
+  // ───────────────────────── Préférences d'affichage ─────────────────────────
+  bool darkMode = false;
+  bool highContrast = false;
+  bool reduceMotion = false;
+  double textScale = 1.0;
+  void toggleDarkMode() {
+    darkMode = !darkMode;
+    notifyListeners();
+  }
+
+  void toggleHighContrast() {
+    highContrast = !highContrast;
+    notifyListeners();
+  }
+
+  void toggleReduceMotion() {
+    reduceMotion = !reduceMotion;
+    notifyListeners();
+  }
+
+  void setTextScale(double v) {
+    textScale = v.clamp(0.8, 1.4);
+    notifyListeners();
+  }
+
+  // ───────────────────────── Données étendues (v2) ───────────────────────────
+  late final messages = <ChatMessage>[];
+  late final assignments = <Assignment>[];
+  late final submissions = <Submission>[];
+  late final attendance = <AttendanceRecord>[];
+  late final scholarships = <Scholarship>[];
 
   // ───────────────────────── Auth-Service ────────────────────────────────────
   String? login(String email, String password) {
@@ -278,8 +313,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addLesson(Course c, String title, bool video) {
-    c.lessons.add(Lesson(_id('l'), title, video, video ? '10 min' : '1 Mo'));
+  void addLesson(Course c, String title, bool video, {String? url, String? meetingLink}) {
+    c.lessons.add(Lesson(_id('l'), title, video, video ? '10 min' : '1 Mo',
+        url: url, meetingLink: meetingLink));
     _push('Nouveau contenu : ${c.title}', title, 'cours',
         role: Role.student, classId: c.classId);
     notifyListeners();
@@ -553,6 +589,7 @@ class AppState extends ChangeNotifier {
     return 'Bonne question ! Reformulez avec un mot-clé du cours (boucle, récursivité, SQL, complexité) et je vous l\'explique simplement.';
   }
 
+  // ───────────────────────── Tuteur IA (recommandations) ─────────────────────
   /// Chapitres à réviser : cours dont la moyenne des quiz est < 12.
   List<String> recommendations(String studentId) {
     final out = <String>[];
@@ -564,5 +601,217 @@ class AppState extends ChangeNotifier {
         out.add('${c.title} - ${c.lessons.first.title}');
     }
     return out;
+  }
+
+  // ───────────────────────── Messagerie ──────────────────────────────────────
+  List<ChatMessage> messagesFor(String userId) => messages
+      .where((m) =>
+          m.senderId == userId ||
+          m.receiverId == userId ||
+          (m.classId != null &&
+              users.any((u) => u.id == userId && u.classId == m.classId)))
+      .toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  List<ChatMessage> conversation(String a, String b) => messages
+      .where((m) =>
+          (m.senderId == a && m.receiverId == b) ||
+          (m.senderId == b && m.receiverId == a))
+      .toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  void sendMessage(String text, {String? receiverId, String? classId}) {
+    if (user == null || text.trim().isEmpty) return;
+    messages.add(ChatMessage(_id('m'), user!.id, text.trim(), _now,
+        receiverId: receiverId, classId: classId));
+    if (receiverId != null) {
+      _push('Nouveau message', text.trim(), 'message', userId: receiverId);
+    } else if (classId != null) {
+      _push('Message de classe', text.trim(), 'message', classId: classId);
+    }
+    notifyListeners();
+  }
+
+  int unreadMessages(String userId) => messages
+      .where((m) => m.receiverId == userId && !m.read && m.senderId != userId)
+      .length;
+
+  void markMessagesRead(String userId) {
+    for (final m in messages) {
+      if (m.receiverId == userId) m.read = true;
+    }
+    notifyListeners();
+  }
+
+  // ───────────────────────── Devoirs / Assignments ───────────────────────────
+  List<Assignment> assignmentsForTeacher(String teacherId) =>
+      assignments.where((a) => a.teacherId == teacherId).toList()
+        ..sort((a, b) => a.due.compareTo(b.due));
+
+  List<Assignment> assignmentsForStudent(String studentId) {
+    final u = userById(studentId);
+    final courseIds = courses
+        .where((c) => c.classId == u?.classId)
+        .map((c) => c.id)
+        .toSet();
+    return assignments.where((a) => courseIds.contains(a.courseId)).toList()
+      ..sort((a, b) => a.due.compareTo(b.due));
+  }
+
+  void createAssignment(String courseId, String title, String desc, int days) {
+    if (user?.role != Role.teacher) return;
+    final a = Assignment(_id('as'), courseId, title.trim(), desc.trim(),
+        _now.add(Duration(days: days)), user!.id);
+    assignments.add(a);
+    final c = courseById(courseId);
+    _push('Nouveau devoir : ${a.title}', c?.title ?? '', 'cours',
+        role: Role.student, classId: c?.classId);
+    notifyListeners();
+  }
+
+  Submission? submissionOf(String assignmentId, String studentId) =>
+      submissions
+          .where((s) => s.assignmentId == assignmentId && s.studentId == studentId)
+          .firstOrNull;
+
+  List<Submission> submissionsForAssignment(String assignmentId) =>
+      submissions.where((s) => s.assignmentId == assignmentId).toList();
+
+  void submitAssignment(String assignmentId, String content) {
+    if (user?.role != Role.student) return;
+    final existing = submissionOf(assignmentId, user!.id);
+    if (existing != null) {
+      existing.content = content;
+      existing.date = _now;
+    } else {
+      submissions.add(Submission(
+          _id('sub'), assignmentId, user!.id, content.trim(), _now));
+    }
+    notifyListeners();
+  }
+
+  void gradeSubmission(String submissionId, double grade, String feedback) {
+    final s = submissions.firstWhere((e) => e.id == submissionId);
+    s.grade = grade;
+    s.feedback = feedback;
+    _push('Devoir corrigé', '${grade.toStringAsFixed(1)}/20', 'note',
+        userId: s.studentId);
+    notifyListeners();
+  }
+
+  // ───────────────────────── Présences ────────────────────────────────────────
+  void markAttendance(String classId, String studentId, DateTime date, bool present,
+      {String? note}) {
+    final day = DateTime(date.year, date.month, date.day);
+    final existing = attendance.firstWhere(
+        (a) =>
+            a.classId == classId &&
+            a.studentId == studentId &&
+            a.date.year == day.year &&
+            a.date.month == day.month &&
+            a.date.day == day.day,
+        orElse: () => AttendanceRecord('', '', '', day, true));
+    if (existing.id.isEmpty) {
+      attendance.add(AttendanceRecord(_id('att'), classId, studentId, day, present,
+          note: note));
+    } else {
+      existing.present = present;
+    }
+    notifyListeners();
+  }
+
+  List<AttendanceRecord> attendanceForClass(String classId, DateTime date) {
+    final day = DateTime(date.year, date.month, date.day);
+    return attendance
+        .where((a) =>
+            a.classId == classId &&
+            a.date.year == day.year &&
+            a.date.month == day.month &&
+            a.date.day == day.day)
+        .toList();
+  }
+
+  double attendanceRate(String studentId) {
+    final recs = attendance.where((a) => a.studentId == studentId).toList();
+    if (recs.isEmpty) return 1.0;
+    return recs.where((a) => a.present).length / recs.length;
+  }
+
+  // ───────────────────────── Bourses ──────────────────────────────────────────
+  void grantScholarship(String studentId, String label, int discount) {
+    if (user?.role != Role.admin) return;
+    scholarships.add(Scholarship(_id('sch'), studentId, label, discount, _now));
+    _push('Bourse accordée', '$label (-$discount%)', 'paiement',
+        userId: studentId);
+    notifyListeners();
+  }
+
+  int effectiveDue(String studentId) {
+    final due = dueOf(studentId);
+    final disc = scholarships
+        .where((s) => s.studentId == studentId)
+        .fold<int>(0, (a, b) => a + b.discount);
+    if (disc <= 0) return due;
+    return (due * (100 - disc.clamp(0, 100)) / 100).round();
+  }
+
+  // ───────────────────────── Conflits d'emploi du temps ──────────────────────
+  bool hasSlotConflict(Slot s) => schedule.any((o) =>
+      o.classId == s.classId &&
+      o.weekday == s.weekday &&
+      o.start == s.start &&
+      o.room == s.room &&
+      o != s);
+
+  // ───────────────────────── Tuteur IA avancé ────────────────────────────────
+  String tutorReplyAdvanced(String question, {String? courseId}) {
+    final base = tutorReply(question);
+    final q = question.toLowerCase();
+    if (q.contains('devoir') || q.contains('assignment')) {
+      final as = assignmentsForStudent(user?.id ?? '');
+      if (as.isNotEmpty) {
+        return '$base\n\nVos devoirs en cours : ${as.map((a) => a.title).join(', ')}.';
+      }
+    }
+    if (q.contains('note') || q.contains('moyenne')) {
+      if (user != null && user!.role == Role.student) {
+        final avg = averageOf(user!.id);
+        return '$base\n\nVotre moyenne actuelle : ${avg == null ? '-' : avg.toStringAsFixed(1)}/20.';
+      }
+    }
+    if (q.contains('emploi') || q.contains('cours')) {
+      if (user != null) {
+        final n = nextSlot(user!.classId);
+        if (n != null) {
+          return '$base\n\nProchain cours : ${n.$1.subject} ${n.$1.start}-${n.$1.end} (${n.$1.room}).';
+        }
+      }
+    }
+    return base;
+  }
+
+  // ───────────────────────── Rapport de présence / bulletin ──────────────────
+  Map<String, dynamic> reportCard(String studentId) {
+    final grades = gradesOf(studentId);
+    final avg = averageOf(studentId);
+    final att = attendanceRate(studentId);
+    return {
+      'grades': grades,
+      'average': avg,
+      'attendance': att,
+      'scholarships': scholarships.where((s) => s.studentId == studentId).toList(),
+    };
+  }
+
+  // ───────────────────────── Analytique enseignant ───────────────────────────
+  Map<String, int> teacherStats(String teacherId) {
+    final myCourseIds = courses.where((c) => c.teacherId == teacherId).map((c) => c.id).toSet();
+    final myQuizzes = quizzes.where((q) => myCourseIds.contains(q.courseId)).toList();
+    return {
+      'courses': myCourseIds.length,
+      'quizzes': myQuizzes.length,
+      'submissions': submissions.length,
+      'students': studentsOfTeacher(teacherId).length,
+    };
   }
 }

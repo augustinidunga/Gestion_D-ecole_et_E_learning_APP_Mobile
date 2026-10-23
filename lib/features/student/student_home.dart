@@ -52,15 +52,15 @@ class StudentHome extends StatelessWidget {
         const SizedBox(height: 8),
         const SectionTitle('Prochain cours'),
         if (next == null)
-          const AppCard(
+          AppCard(
             child: Row(
               children: [
-                IconBadge(Icons.schedule, color: AppColors.textMuted),
+                IconBadge(Icons.schedule, color: Neumo.of(context).textMuted),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Aucun cours programmé.',
-                    style: TextStyle(color: AppColors.textMuted),
+                    style: TextStyle(color: Neumo.of(context).textMuted),
                   ),
                 ),
               ],
@@ -84,8 +84,8 @@ class StudentHome extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${next.$2 == 0 ? "Aujourd\'hui" : weekdays[DateTime.now().add(Duration(days: next.$2)).weekday]} • ${next.$1.start}-${next.$1.end} • ${next.$1.room}',
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 12),
+                        style:  TextStyle(
+                            color: Neumo.of(context).textMuted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -122,8 +122,8 @@ class StudentHome extends StatelessWidget {
                         ),
                         Text(
                           'À rendre avant le ${fmtDate(q.due)}',
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 12),
+                          style:  TextStyle(
+                              color: Neumo.of(context).textMuted, fontSize: 12),
                         ),
                       ],
                     ),
@@ -134,10 +134,10 @@ class StudentHome extends StatelessWidget {
             ),
         const SectionTitle('Dernières notes'),
         if (grades.isEmpty)
-          const AppCard(
+          AppCard(
             child: Text(
               'Aucune note publiée pour le moment.',
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: Neumo.of(context).textMuted),
             ),
           )
         else
@@ -161,17 +161,17 @@ class StudentHome extends StatelessWidget {
                         ),
                         Text(
                           g.courseTitle,
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 12),
+                          style:  TextStyle(
+                              color: Neumo.of(context).textMuted, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     '${g.value.toStringAsFixed(1)}/20',
-                    style: const TextStyle(
+                    style:  TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: AppColors.text,
+                        color: Neumo.of(context).text,
                         fontSize: 16),
                   ),
                 ],

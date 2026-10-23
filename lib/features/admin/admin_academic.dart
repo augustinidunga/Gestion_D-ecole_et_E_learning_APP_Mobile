@@ -82,10 +82,15 @@ class AdminAcademic extends StatelessWidget {
             if (context.mounted) toast(context, 'Format d\'heure attendu : HH:MM');
             return;
           }
-          final teacher = s.courses.firstWhere((c) => c.title == r['course']).teacherId;
-          s.addSlot(Slot(r['class']!, int.parse(r['day']!), r['start']!, r['end']!, r['course']!,
-              r['room']!.isEmpty ? 'Salle ?' : r['room']!, s.userById(teacher)?.name ?? ''));
-          if (context.mounted) toast(context, 'Emploi du temps mis à jour.');
+           final teacher = s.courses.firstWhere((c) => c.title == r['course']).teacherId;
+           final newSlot = Slot(r['class']!, int.parse(r['day']!), r['start']!, r['end']!, r['course']!,
+               r['room']!.isEmpty ? 'Salle ?' : r['room']!, s.userById(teacher)?.name ?? '');
+           if (s.hasSlotConflict(newSlot)) {
+             if (context.mounted) toast(context, 'Conflit d\'emploi du temps détecté.');
+             return;
+           }
+           s.addSlot(newSlot);
+           if (context.mounted) toast(context, 'Emploi du temps mis à jour.');
         },
         icon: const Icon(Icons.event),
         label: const Text('Créneau'),
@@ -137,8 +142,8 @@ class AdminAcademic extends StatelessWidget {
                           '${s.students.where((e) => e.classId == c.id).length} étudiant(s) • '
                           '${s.courses.where((k) => k.classId == c.id).length} matière(s) • '
                           '${s.schedule.where((x) => x.classId == c.id).length} créneaux/semaine',
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 12),
+                          style: TextStyle(
+                              color: Neumo.of(context).textMuted, fontSize: 12),
                         ),
                       ],
                     ),
@@ -164,8 +169,8 @@ class AdminAcademic extends StatelessWidget {
                         ),
                         Text(
                           '${s.className(c.classId)} • ${s.userById(c.teacherId)?.name ?? ''}',
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 12),
+                          style:  TextStyle(
+                              color: Neumo.of(context).textMuted, fontSize: 12),
                         ),
                       ],
                     ),

@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
 import '../../data/models.dart';
+import '../shared/video_player_screen.dart';
 
 class StudentCourses extends StatelessWidget {
   const StudentCourses({super.key});
@@ -39,7 +40,7 @@ class StudentCourses extends StatelessWidget {
                           ),
                           Text(
                             '${s.userById(c.teacherId)?.name ?? ''} • ${c.lessons.length} contenus',
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                            style: TextStyle(color: Neumo.of(context).textMuted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -62,7 +63,7 @@ class StudentCourses extends StatelessWidget {
                   children: [
                     Text(
                       '${(s.progressOf(c) * 100).round()} % complété',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      style:  TextStyle(fontSize: 11, color: Neumo.of(context).textMuted),
                     ),
                     TextButton(
                       onPressed: () => Navigator.push(
@@ -115,9 +116,12 @@ class CourseDetail extends StatelessWidget {
                     toast(context, 'Hors connexion : téléchargez ce contenu avant de le consulter.');
                     return;
                   }
-                  s.markDone(l);
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (_) => LessonViewer(lesson: l)));
+                   s.markDone(l);
+                   if (l.isVideo) {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => VideoLessonScreen(lesson: l)));
+                   } else {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => LessonViewer(lesson: l)));
+                   }
                 },
                 child: Row(
                   children: [
@@ -136,8 +140,8 @@ class CourseDetail extends StatelessWidget {
                           ),
                           Text(
                             '${l.isVideo ? "Vidéo" : "PDF"} • ${l.info}',
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 12),
+                            style:  TextStyle(
+                                color: Neumo.of(context).textMuted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -169,7 +173,7 @@ class CourseDetail extends StatelessWidget {
                             : Icons.download_outlined,
                         color: s.downloaded.contains(l.id)
                             ? AppColors.accent
-                            : AppColors.textMuted,
+                            : Neumo.of(context).textMuted,
                       ),
                     ),
                   ],
@@ -210,7 +214,7 @@ class _LessonViewerState extends State<LessonViewer> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: l.isVideo ? AppColors.dark : AppColors.surface,
+                color: l.isVideo ? AppColors.dark : Neumo.of(context).surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.border),
               ),
@@ -236,7 +240,7 @@ class _LessonViewerState extends State<LessonViewer> {
                           'Progression',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textMuted,
+                            color: Neumo.of(context).textMuted,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -282,7 +286,7 @@ class _LessonViewerState extends State<LessonViewer> {
               const SizedBox(height: 8),
               Text(
                 'Diffusion adaptative HLS (360p à 1080p) - lecteur simulé.',
-                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                style:  TextStyle(fontSize: 11, color: Neumo.of(context).textMuted),
               ),
             ],
           ],

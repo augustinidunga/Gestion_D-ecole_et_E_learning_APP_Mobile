@@ -107,19 +107,19 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
-                    Text(n.body, style: const TextStyle(color: AppColors.textMuted)),
+                    Text(n.body, style: TextStyle(color: Neumo.of(context).textMuted)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(
                           Icons.schedule_rounded,
                           size: 12,
-                          color: AppColors.textMuted,
+                          color: Neumo.of(context).textMuted,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${fmtDate(n.date)} • ${n.role?.label ?? 'Tous'}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          style:  TextStyle(fontSize: 11, color: Neumo.of(context).textMuted),
                         ),
                       ],
                     ),

@@ -25,18 +25,14 @@ class _RoleShellState extends State<RoleShell> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final palette = Neumo.of(context);
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 72,
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border(
-              bottom: BorderSide(color: AppColors.border.withOpacity(0.5)),
-            ),
-          ),
+          decoration: BoxDecoration(color: palette.bg),
         ),
         title: Row(
           children: [
@@ -44,7 +40,7 @@ class _RoleShellState extends State<RoleShell> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.14),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(Icons.school_rounded,
@@ -56,19 +52,20 @@ class _RoleShellState extends State<RoleShell> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'EduConnect',
                     style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: palette.textMuted,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     widget.tabs[_i].label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
+                      color: palette.text,
                     ),
                   ),
                 ],
@@ -101,7 +98,7 @@ class _RoleShellState extends State<RoleShell> {
             onPressed: () => setState(() => _i = widget.tabs.length - 1),
             icon: CircleAvatar(
               radius: 17,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundColor: AppColors.primary.withOpacity(0.14),
               child: Text(
                 s.user!.initials,
                 style: const TextStyle(
@@ -118,12 +115,12 @@ class _RoleShellState extends State<RoleShell> {
       body: IndexedStack(index: _i, children: [for (final t in widget.tabs) t.page]),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: palette.bg,
           boxShadow: [
             BoxShadow(
-              color: AppColors.dark.withOpacity(0.04),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
+              color: palette.shadowDark.withOpacity(palette.isDark ? 0.6 : 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, -6),
             ),
           ],
         ),

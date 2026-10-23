@@ -48,6 +48,43 @@ class AdminFinance extends StatelessWidget {
                   color: AppColors.warn),
             ],
           ),
+          const SizedBox(height: 12),
+          AppFormButton(
+            text: 'Accorder une bourse',
+            icon: Icons.card_giftcard_rounded,
+            color: AppColors.accent,
+            onPressed: () async {
+              final r = await askForm(context, 'Bourse', [
+                Fld('student', 'Étudiant', options: {for (final u in s.students) u.id: u.name}),
+                const Fld('label', 'Libellé'),
+                const Fld('discount', 'Réduction %', number: true),
+              ], ok: 'Accorder');
+              if (r == null) return;
+              final d = int.tryParse(r['discount']!);
+              if (d == null || r['label']!.isEmpty) {
+                toast(context, 'Données invalides');
+                return;
+              }
+              s.grantScholarship(r['student']!, r['label']!, d);
+              toast(context, 'Bourse accordée');
+            },
+          ),
+          const SizedBox(height: 16),
+          const SectionTitle('Bourses accordées'),
+          if (s.scholarships.isEmpty)
+            AppCard(child: Text('Aucune bourse', style: TextStyle(color: Neumo.of(context).textMuted)))
+          else
+            for (final sc in s.scholarships)
+              AppCardElevated(
+                child: Row(children: [
+                  IconBadge(Icons.card_giftcard_rounded, color: AppColors.accent),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.userById(sc.studentId)?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    Text('${sc.label} (-${sc.discount}%)', style:  TextStyle(fontSize: 12, color: Neumo.of(context).textMuted)),
+                  ])),
+                ]),
+              ),
           const SizedBox(height: 16),
           const SectionTitle('Factures et transactions'),
           for (final i in (s.invoices.toList()
@@ -72,14 +109,14 @@ class AdminFinance extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         Text(
-                          '${i.label} • ${fmtMoney(i.amount)}',
+                          '${i.label} • ${fmtMoney(i.amount)} • Solde effectif ${fmtMoney(s.effectiveDue(i.studentId))}',
                           style: const TextStyle(fontSize: 12),
                         ),
                         Text(
                           i.paid
                               ? '${i.receipt} • ${i.method} • ${fmtDate(i.paidOn!)}'
                               : 'Échéance ${fmtDate(i.due)}',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                          style:  TextStyle(color: Neumo.of(context).textMuted, fontSize: 11),
                         ),
                       ],
                     ),

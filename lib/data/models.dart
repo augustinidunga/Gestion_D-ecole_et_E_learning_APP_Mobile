@@ -40,7 +40,9 @@ class Lesson {
   final String id, title;
   final bool isVideo;
   final String info; // durée ou taille
-  const Lesson(this.id, this.title, this.isVideo, this.info);
+  final String? url; // URL vidéo ou document
+  final String? meetingLink; // lien visio (Zoom/Meet/Teams)
+  const Lesson(this.id, this.title, this.isVideo, this.info, {this.url, this.meetingLink});
 }
 
 class Course {
@@ -125,6 +127,55 @@ class AppNotif {
 class Slot {
   final String classId, start, end, subject, room, teacher;
   final int weekday; // 1 = lundi
+  final String? meetingLink;
   const Slot(this.classId, this.weekday, this.start, this.end, this.subject,
-      this.room, this.teacher);
+      this.room, this.teacher, {this.meetingLink});
+}
+
+/// Message échangé entre utilisateurs (chat direct ou classe).
+class ChatMessage {
+  final String id, senderId;
+  final String? receiverId, classId;
+  final String text;
+  final DateTime date;
+  bool read;
+  ChatMessage(this.id, this.senderId, this.text, this.date,
+      {this.receiverId, this.classId, this.read = false});
+}
+
+/// Devoir / travail à rendre.
+class Assignment {
+  final String id, courseId, title, description, teacherId;
+  final DateTime due;
+  const Assignment(this.id, this.courseId, this.title, this.description,
+      this.due, this.teacherId);
+}
+
+class Submission {
+  String content;
+  final String id, assignmentId, studentId;
+  DateTime date;
+  double? grade;
+  String? feedback;
+  Submission(this.id, this.assignmentId, this.studentId, this.content, this.date,
+      {this.grade, this.feedback});
+}
+
+/// Enregistrement de présence.
+class AttendanceRecord {
+  final String id, classId, studentId;
+  final DateTime date;
+  bool present;
+  final String? note;
+  AttendanceRecord(this.id, this.classId, this.studentId, this.date, this.present,
+      {this.note});
+}
+
+/// Bourse / réduction sur les frais.
+class Scholarship {
+  final String id, studentId, label;
+  final int discount; // pourcentage
+  final DateTime grantedOn;
+  const Scholarship(this.id, this.studentId, this.label, this.discount,
+      this.grantedOn);
 }

@@ -101,7 +101,7 @@ class StudentPayments extends StatelessWidget {
                           i.paid
                               ? 'Payé le ${fmtDate(i.paidOn!)} • ${i.receipt}'
                               : 'Échéance : ${fmtDate(i.due)}',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          style: TextStyle(color: Neumo.of(context).textMuted, fontSize: 12),
                         ),
                       ],
                     ),

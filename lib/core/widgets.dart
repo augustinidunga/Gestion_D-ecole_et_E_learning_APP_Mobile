@@ -11,6 +11,68 @@ void toast(BuildContext c, String msg) => ScaffoldMessenger.of(c)
   ..hideCurrentSnackBar()
   ..showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
 
+/// Surface « neumorphique » : même couleur que le fond, ombre double.
+class NeumoSurface extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  final double radius;
+  final double elevation;
+  final bool inset;
+  final bool pressed;
+  final Color? color;
+  final VoidCallback? onTap;
+  final EdgeInsets margin;
+
+  const NeumoSurface({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.radius = 20,
+    this.elevation = 6,
+    this.inset = false,
+    this.pressed = false,
+    this.color,
+    this.onTap,
+    this.margin = const EdgeInsets.only(bottom: 12),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
+    final base = color ?? palette.surface;
+    final shadows = inset
+        ? NeumoShadows.inset(elevation: elevation, dark: palette.isDark)
+        : NeumoShadows.raised(elevation: elevation, dark: palette.isDark);
+    return Container(
+      margin: margin,
+      decoration: BoxDecoration(
+        color: base,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: pressed
+            ? [
+                BoxShadow(
+                  color: (palette.isDark
+                          ? AppColors.darkDarkShadow
+                          : AppColors.darkShadow)
+                      .withOpacity(palette.isDark ? 0.7 : 0.35),
+                  offset: const Offset(2, 2),
+                  blurRadius: 6,
+                ),
+              ]
+            : shadows,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(radius),
+          onTap: onTap,
+          child: Padding(padding: padding, child: child),
+        ),
+      ),
+    );
+  }
+}
+
 class AppCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -26,42 +88,20 @@ class AppCard extends StatelessWidget {
     this.onTap,
     this.padding = const EdgeInsets.all(16),
     this.color = Colors.white,
-    this.elevation = 0,
+    this.elevation = 5,
     this.border = true,
     this.margin = const EdgeInsets.only(bottom: 12),
   });
 
   @override
-  Widget build(BuildContext context) {
-    final effectiveColor = color == Colors.white ? AppColors.surface : color;
-    return Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        color: effectiveColor,
-        borderRadius: BorderRadius.circular(20),
-        border: border
-            ? Border.all(color: AppColors.border.withOpacity(0.5), width: 0.5)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: elevation > 0
-                ? AppColors.dark.withOpacity(0.06)
-                : Colors.transparent,
-            blurRadius: elevation > 0 ? 20 : 0,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(padding: padding, child: child),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => NeumoSurface(
+        child: child,
+        padding: padding,
+        elevation: elevation,
+        color: color == Colors.white ? null : color,
+        margin: margin,
+        onTap: onTap,
+      );
 }
 
 class AppCardElevated extends StatelessWidget {
@@ -81,14 +121,14 @@ class AppCardElevated extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => AppCard(
-    child: child,
-    padding: padding,
-    color: color,
-    elevation: 1,
-    margin: margin ?? const EdgeInsets.only(bottom: 12),
-    onTap: onTap,
-  );
+  Widget build(BuildContext context) => NeumoSurface(
+        child: child,
+        padding: padding,
+        elevation: 7,
+        color: color == Colors.white ? null : color,
+        margin: margin ?? const EdgeInsets.only(bottom: 12),
+        onTap: onTap,
+      );
 }
 
 class SectionTitle extends StatelessWidget {
@@ -96,22 +136,25 @@ class SectionTitle extends StatelessWidget {
   final Widget? trailing;
   const SectionTitle(this.text, {super.key, this.trailing});
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 12, bottom: 10),
-    child: Row(children: [
-      Expanded(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.text,
+  Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 14, bottom: 10),
+      child: Row(children: [
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: palette.text,
+            ),
           ),
         ),
-      ),
-      if (trailing != null) trailing!,
-    ]),
-  );
+        if (trailing != null) trailing!,
+      ]),
+    );
+  }
 }
 
 class StatusChip extends StatelessWidget {
@@ -120,21 +163,21 @@ class StatusChip extends StatelessWidget {
   const StatusChip(this.text, this.color, {super.key});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(50),
-    ),
-    child: Text(
-      text,
-      style: TextStyle(
-        color: color,
-        fontSize: 11.5,
-        fontWeight: FontWeight.w600,
-        height: 1,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            height: 1,
+          ),
+        ),
+      );
 }
 
 class StatTile extends StatelessWidget {
@@ -144,39 +187,45 @@ class StatTile extends StatelessWidget {
   const StatTile(this.icon, this.label, this.value,
       {super.key, this.color = AppColors.primary});
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: AppCard(
-      padding: const EdgeInsets.all(16),
-      elevation: 0.5,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(14),
+  Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
+    return Expanded(
+      child: NeumoSurface(
+        padding: const EdgeInsets.all(14),
+        elevation: 6,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: color, size: 21),
           ),
-          child: Icon(icon, color: color, size: 22),
-        ),
-        const SizedBox(height: 10),
-        FittedBox(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.text,
+          const SizedBox(height: 10),
+          FittedBox(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: palette.text,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w500),
-        ),
-      ]),
-    ),
-  );
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+                fontSize: 12,
+                color: palette.textMuted,
+                fontWeight: FontWeight.w600),
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 class GradientHeader extends StatelessWidget {
@@ -187,52 +236,56 @@ class GradientHeader extends StatelessWidget {
       {super.key, this.icon = Icons.school_rounded, this.gradientColors});
   @override
   Widget build(BuildContext context) {
-    final colors = gradientColors ?? [AppColors.primary, AppColors.primaryLight];
+    final palette = Neumo.of(context);
+    final colors = gradientColors ??
+        const [Color(0xFF5B4BE1), Color(0xFF8B7CF6)];
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        color: palette.surface,
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.last.withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: NeumoShadows.raised(elevation: 8, dark: palette.isDark),
       ),
       child: Row(children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
-                height: 1.2,
+                height: 1.25,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               subtitle,
-              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+              style: TextStyle(color: palette.textMuted, fontSize: 13),
             ),
           ]),
         ),
+        const SizedBox(width: 14),
         Container(
-          width: 60,
-          height: 60,
+          width: 54,
+          height: 54,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: colors.last.withOpacity(0.45),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          child: Icon(icon, size: 32, color: Colors.white),
+          child: Icon(icon, size: 28, color: Colors.white),
         ),
       ]),
     );
@@ -245,40 +298,45 @@ class EmptyState extends StatelessWidget {
   final String? subtext;
   const EmptyState(this.icon, this.text, [this.subtext]);
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(40),
-    child: Center(
-      child: Column(children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppColors.textMuted.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(20),
+  Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(36),
+      child: Center(
+        child: Column(children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: NeumoShadows.raised(
+                  elevation: 5, dark: palette.isDark),
+            ),
+            child: Icon(icon, size: 32, color: palette.textMuted),
           ),
-          child: Icon(icon, size: 32, color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (subtext != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 14),
           Text(
-            subtext!,
+            text,
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ],
-      ]),
-    ),
-  );
+          if (subtext != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              subtext!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: palette.textMuted, fontSize: 13),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
 }
 
 class IconBadge extends StatelessWidget {
@@ -288,14 +346,14 @@ class IconBadge extends StatelessWidget {
   const IconBadge(this.icon, {super.key, this.color = AppColors.primary, this.size = 42});
   @override
   Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Icon(icon, color: color, size: 22),
-  );
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(size * 0.33),
+        ),
+        child: Icon(icon, color: color, size: size * 0.5),
+      );
 }
 
 class AppInputDecoration {
@@ -325,18 +383,19 @@ class FormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
-          color: AppColors.text,
+          color: palette.text,
         ),
       ),
       if (subtitle != null) ...[
         const SizedBox(height: 4),
-        Text(subtitle!, style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+        Text(subtitle!, style: TextStyle(color: palette.textMuted, fontSize: 13)),
       ],
       const SizedBox(height: 14),
       ...children,
@@ -344,6 +403,7 @@ class FormSection extends StatelessWidget {
   }
 }
 
+/// Bouton neumorphique (relief doux, texte coloré).
 class AppFormButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String text;
@@ -364,28 +424,45 @@ class AppFormButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final btn = FilledButton.icon(
-      onPressed: loading ? null : onPressed,
-      icon: loading
-          ? const SizedBox(
+    final palette = Neumo.of(context);
+    final accent = color ?? AppColors.primary;
+    final enabled = onPressed != null && !loading;
+    final btn = NeumoSurface(
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      radius: 16,
+      elevation: 5,
+      pressed: !enabled,
+      color: palette.surface,
+      onTap: enabled ? onPressed : null,
+      child: Row(
+        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (loading)
+            SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              child: CircularProgressIndicator(color: accent, strokeWidth: 2.4),
             )
-          : (icon != null ? Icon(icon) : null),
-      label: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
-      style: color != null
-          ? FilledButton.styleFrom(
-              backgroundColor: color!,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          else if (icon != null)
+            Icon(icon, color: enabled ? accent : palette.textMuted, size: 20),
+          if (icon != null || loading) const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: enabled ? accent : palette.textMuted,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
               ),
-            )
-          : null,
+            ),
+          ),
+        ],
+      ),
     );
-    return expanded
-        ? SizedBox(width: double.infinity, child: btn)
-        : btn;
+    return expanded ? SizedBox(width: double.infinity, child: btn) : btn;
   }
 }
 
@@ -427,8 +504,14 @@ class AppTextFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: NeumoShadows.inset(elevation: 3, dark: palette.isDark),
+      ),
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,
@@ -440,20 +523,25 @@ class AppTextFormField extends StatelessWidget {
         readOnly: readOnly,
         onTap: onTap,
         maxLines: maxLines ?? 1,
-        style: const TextStyle(fontSize: 15),
+        style: TextStyle(fontSize: 15, color: palette.text),
         decoration: InputDecoration(
           labelText: label,
           hintText: hintText,
-          prefixIcon: icon != null
-              ? Icon(icon, color: AppColors.primary)
-              : null,
+          prefixIcon:
+              icon != null ? Icon(icon, color: AppColors.primary) : null,
           suffixIcon: suffixIcon,
           errorText: errorText,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           filled: true,
-          fillColor: readOnly
-              ? AppColors.bg.withOpacity(0.5)
-              : AppColors.surface,
+          fillColor: Colors.transparent,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+          ),
         ),
       ),
     );
@@ -482,8 +570,15 @@ class AppDropdownFormField<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: NeumoShadows.inset(elevation: 3, dark: palette.isDark),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: DropdownMenu<T>(
         initialSelection: value,
         label: Text(label),
@@ -492,9 +587,9 @@ class AppDropdownFormField<T> extends StatelessWidget {
         onSelected: onChanged,
         errorText: errorText,
         expandedInsets: expanded ? null : EdgeInsets.zero,
-        textStyle: const TextStyle(fontSize: 15),
+        textStyle: TextStyle(fontSize: 15, color: palette.text),
         menuStyle: MenuStyle(
-          backgroundColor: WidgetStateProperty.all(AppColors.surface),
+          backgroundColor: WidgetStateProperty.all(palette.surface),
           surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
         ),
       ),
@@ -522,22 +617,33 @@ class ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = Neumo.of(context);
     final effectiveColor = color ?? AppColors.primary;
-    Widget btn;
-    if (outlined) {
-      btn = OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, color: effectiveColor),
-        label: Text(label, style: TextStyle(color: effectiveColor, fontWeight: FontWeight.w600)),
-      );
-    } else {
-      btn = FilledButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        style: FilledButton.styleFrom(backgroundColor: effectiveColor),
-      );
-    }
+    final btn = NeumoSurface(
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      radius: 15,
+      elevation: 5,
+      onTap: onPressed,
+      color: palette.surface,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: effectiveColor, size: 20),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: effectiveColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
     return width != null ? SizedBox(width: width, child: btn) : btn;
   }
 }
@@ -569,119 +675,163 @@ Future<Map<String, String>?> askForm(
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 250),
     pageBuilder: (context, anim1, anim2) => StatefulBuilder(
-      builder: (ctx, set) => Center(
-        child: Container(
-          width: 440,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.82,
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.dark.withOpacity(0.25),
-                blurRadius: 32,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                  color: AppColors.primary,
-                ),
-                child: Row(children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(12),
+      builder: (ctx, set) => Material(
+        child: Center(
+          child: Container(
+            width: 440,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.82,
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            decoration: BoxDecoration(
+              color: Neumo.of(context).surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: NeumoShadows.raised(elevation: 10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
-                    child: const Icon(Icons.edit_note_rounded, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5B4BE1), Color(0xFF8B7CF6)],
                     ),
                   ),
-                ]),
-              ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    for (final f in fields)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: f.options != null
-                            ? DropdownButtonFormField<String>(
-                                initialValue: sel[f.key],
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  labelText: f.label,
-                                  prefixIcon: const Icon(Icons.arrow_downward, size: 18),
-                                ),
-                                items: [
-                                  for (final e in f.options!.entries)
-                                    DropdownMenuItem(value: e.key, child: Text(e.value))
-                                ],
-                                onChanged: (v) => set(() => sel[f.key] = v!),
-                              )
-                            : TextField(
-                                controller: ctrls[f.key],
-                                obscureText: f.obscure,
-                                keyboardType: f.number ? TextInputType.number : null,
-                                maxLines: f.multiline ? 3 : 1,
-                                style: const TextStyle(fontSize: 15),
-                                decoration: InputDecoration(
-                                  labelText: f.label,
-                                  floatingLabelBehavior: FloatingLabelBehavior.auto,
-                                ),
-                              ),
+                  child: Row(children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: const Icon(Icons.edit_note_rounded,
+                          color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ]),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Annuler'),
-                    ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(22),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      for (final f in fields)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: f.options != null
+                              ? DropdownButtonFormField<String>(
+                                  initialValue: sel[f.key],
+                                  isExpanded: true,
+                                  decoration: InputDecoration(
+                                    labelText: f.label,
+                                    prefixIcon:
+                                        const Icon(Icons.arrow_drop_down, size: 20),
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  items: [
+                                    for (final e in f.options!.entries)
+                                      DropdownMenuItem(
+                                          value: e.key, child: Text(e.value))
+                                  ],
+                                  onChanged: (v) => set(() => sel[f.key] = v!),
+                                )
+                              : Container(
+                                  decoration: BoxDecoration(
+                                    color: Neumo.of(context).surface,
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: NeumoShadows.inset(elevation: 3),
+                                  ),
+                                  child: TextField(
+                                    controller: ctrls[f.key],
+                                    obscureText: f.obscure,
+                                    keyboardType: f.number
+                                        ? TextInputType.number
+                                        : null,
+                                    maxLines: f.multiline ? 3 : 1,
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        color: Neumo.of(context).text),
+                                    decoration: InputDecoration(
+                                      labelText: f.label,
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.auto,
+                                      filled: true,
+                                      fillColor: Colors.transparent,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                    ]),
                   ),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(ctx, {
-                        for (final f in fields)
-                          f.key: f.options != null
-                              ? (sel[f.key] ?? '')
-                              : ctrls[f.key]!.text.trim()
-                      }),
-                      child: Text(ok, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Annuler'),
+                      ),
                     ),
-                  ),
-                ]),
-              ),
-            ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: NeumoSurface(
+                        margin: EdgeInsets.zero,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        radius: 14,
+                        elevation: 4,
+                        onTap: () => Navigator.pop(ctx, {
+                          for (final f in fields)
+                            f.key: f.options != null
+                                ? (sel[f.key] ?? '')
+                                : ctrls[f.key]!.text.trim()
+                        }),
+                        child: Center(
+                          child: Text(ok,
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
+            ),
           ),
         ),
       ),

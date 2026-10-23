@@ -58,18 +58,18 @@ class NotificationsScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight:
                                       s.isRead(n) ? FontWeight.w600 : FontWeight.w800,
-                                  color: AppColors.text,
+                                  color: Neumo.of(context).text,
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(n.body, style: const TextStyle(color: AppColors.textMuted)),
+                              Text(n.body, style:  TextStyle(color: Neumo.of(context).textMuted)),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
                                   Text(
                                     fmtDate(n.date),
-                                    style: const TextStyle(
-                                        fontSize: 11, color: AppColors.textMuted),
+                                    style:  TextStyle(
+                                        fontSize: 11, color: Neumo.of(context).textMuted),
                                   ),
                                   if (!s.isRead(n)) ...[
                                     const SizedBox(width: 6),

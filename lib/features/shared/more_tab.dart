@@ -54,7 +54,7 @@ class MoreTab extends StatelessWidget {
                     ),
                     Text(
                       u.email,
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+                      style: TextStyle(color: Neumo.of(context).textMuted, fontSize: 14),
                     ),
                     const SizedBox(height: 8),
                     StatusChip(
@@ -109,16 +109,18 @@ class MoreTab extends StatelessWidget {
                     children: [
                       Text(
                         e.title,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Neumo.of(context).text),
                       ),
                       Text(
                         e.subtitle,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        style:  TextStyle(fontSize: 12, color: Neumo.of(context).textMuted),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                 Icon(Icons.chevron_right_rounded, color: Neumo.of(context).textMuted),
               ],
             ),
           ),

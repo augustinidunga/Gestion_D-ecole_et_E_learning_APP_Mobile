@@ -79,8 +79,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   ),
                                   Text(
                                     sl.end,
-                                    style: const TextStyle(
-                                        color: AppColors.textMuted, fontSize: 12),
+                                    style: TextStyle(
+                                        color: Neumo.of(context).textMuted, fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -102,8 +102,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     ),
                                     Text(
                                       '${sl.room} • ${u.role == Role.student ? sl.teacher : s.className(sl.classId)}',
-                                      style: const TextStyle(
-                                          color: AppColors.textMuted, fontSize: 12),
+                                      style:  TextStyle(
+                                          color: Neumo.of(context).textMuted, fontSize: 12),
                                     ),
                                   ],
                                 ),

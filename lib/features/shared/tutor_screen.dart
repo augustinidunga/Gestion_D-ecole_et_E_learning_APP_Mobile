@@ -22,7 +22,7 @@ class _TutorScreenState extends State<TutorScreen> {
     final s = context.read<AppState>();
     setState(() {
       _msgs.add((true, text.trim()));
-      _msgs.add((false, s.tutorReply(text)));
+      _msgs.add((false, s.tutorReplyAdvanced(text)));
       _ctrl.clear();
     });
   }
@@ -75,7 +75,7 @@ class _TutorScreenState extends State<TutorScreen> {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: m.$1 ? AppColors.primary : AppColors.surface,
+                        color: m.$1 ? AppColors.primary : Neumo.of(context).surface,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: m.$1 ? AppColors.primary : AppColors.border,
@@ -84,18 +84,18 @@ class _TutorScreenState extends State<TutorScreen> {
                       child: Text(
                         m.$2,
                         style: TextStyle(
-                          color: m.$1 ? Colors.white : AppColors.text,
+                          color: m.$1 ? Colors.white : Neumo.of(context).text,
                           fontSize: 14,
                         ),
                       ),
                     ),
                   ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Les réponses de l\'IA doivent être vérifiées pour les contenus importants.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    style: TextStyle(fontSize: 11, color: Neumo.of(context).textMuted),
                   ),
                 ),
               ],
@@ -118,7 +118,7 @@ class _TutorScreenState extends State<TutorScreen> {
                       expanded: false,
                       text: q,
                       icon: Icons.lightbulb_rounded,
-                      color: AppColors.bg,
+                      color: Neumo.of(context).bg,
                       onPressed: () => _send(q),
                     ),
                   ),
@@ -133,7 +133,7 @@ class _TutorScreenState extends State<TutorScreen> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: Neumo.of(context).surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.border),
                       ),

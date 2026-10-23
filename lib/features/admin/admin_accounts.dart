@@ -76,7 +76,7 @@ class _AdminAccountsState extends State<AdminAccounts> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Neumo.of(context).surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border),
               ),
@@ -99,8 +99,8 @@ class _AdminAccountsState extends State<AdminAccounts> {
                           },
                         ),
                   filled: true,
-                  fillColor: AppColors.surface,
-                  hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.7)),
+                  fillColor: Neumo.of(context).surface,
+                  hintStyle: TextStyle(color: Neumo.of(context).textMuted.withOpacity(0.7)),
                 ),
               ),
             ),
@@ -119,7 +119,7 @@ class _AdminAccountsState extends State<AdminAccounts> {
                     onSelected: (_) => setState(() => _filter = null),
                     selectedColor: AppColors.primary.withOpacity(0.15),
                     labelStyle: TextStyle(
-                      color: _filter == null ? AppColors.primary : AppColors.textMuted,
+                      color: _filter == null ? AppColors.primary : Neumo.of(context).textMuted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -133,7 +133,7 @@ class _AdminAccountsState extends State<AdminAccounts> {
                       onSelected: (_) => setState(() => _filter = r),
                       selectedColor: AppColors.primary.withOpacity(0.15),
                       labelStyle: TextStyle(
-                        color: _filter == r ? AppColors.primary : AppColors.textMuted,
+                        color: _filter == r ? AppColors.primary : Neumo.of(context).textMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -157,7 +157,7 @@ class _AdminAccountsState extends State<AdminAccounts> {
                             children: [
                               CircleAvatar(
                                 backgroundColor:
-                                    (u.active ? AppColors.primary : AppColors.textMuted)
+                                    (u.active ? AppColors.primary : Neumo.of(context).textMuted)
                                         .withOpacity(0.12),
                                 child: Text(
                                   u.initials,
@@ -182,13 +182,13 @@ class _AdminAccountsState extends State<AdminAccounts> {
                                       u.email,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          color: AppColors.textMuted, fontSize: 13),
+                                      style:  TextStyle(
+                                          color: Neumo.of(context).textMuted, fontSize: 13),
                                     ),
                                     Text(
                                       '${u.role.label}${u.classId != null ? ' • ${s.className(u.classId)}' : ''}',
-                                      style: const TextStyle(
-                                          color: AppColors.textMuted, fontSize: 12),
+                                      style:  TextStyle(
+                                          color: Neumo.of(context).textMuted, fontSize: 12),
                                     ),
                                   ],
                                 ),

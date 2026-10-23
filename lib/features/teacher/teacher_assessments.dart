@@ -74,8 +74,8 @@ class TeacherAssessments extends StatelessWidget {
                               ),
                               Text(
                                 '${s.courseById(q.courseId)?.title} • échéance ${fmtDate(q.due)}',
-                                style: const TextStyle(
-                                    color: AppColors.textMuted, fontSize: 12),
+                                style: TextStyle(
+                                    color: Neumo.of(context).textMuted, fontSize: 12),
                               ),
                             ],
                           ),
@@ -138,7 +138,7 @@ class QuizResults extends StatelessWidget {
                       ),
                     ),
                     a == null || !a.synced
-                        ? const StatusChip('Non rendu', AppColors.textMuted)
+                        ?  StatusChip('Non rendu', Neumo.of(context).textMuted)
                         : StatusChip(
                             '${a.score.toStringAsFixed(1)}/20', AppColors.accent),
                   ],
@@ -174,7 +174,7 @@ class QuizResults extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${(diff[i] * 100).round()} % d\'erreurs',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    style:  TextStyle(fontSize: 11, color: Neumo.of(context).textMuted),
                   ),
                 ],
               ),

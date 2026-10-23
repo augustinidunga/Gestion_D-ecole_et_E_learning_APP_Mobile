@@ -49,8 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.bg, AppColors.bg],
+          gradient: LinearGradient(
+            colors: [Neumo.of(context).bg, Neumo.of(context).bg],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -128,18 +128,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Connexion',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.text,
+                                    color: Neumo.of(context).text,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
+                                Text(
                                   'Accédez à votre espace sécurisé.',
-                                  style: TextStyle(color: AppColors.textMuted),
+                                  style: TextStyle(color: Neumo.of(context).textMuted),
                                 ),
                                 const SizedBox(height: 10),
                                 AppTextFormField(
@@ -226,11 +226,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 10),
                                 const Divider(),
                                 const SizedBox(height: 6),
-                                const Text(
+                                Text(
                                   'Accès de démonstration',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.text,
+                                    color: Neumo.of(context).text,
                                   ),
                                 ),
                                 const SizedBox(height: 8),

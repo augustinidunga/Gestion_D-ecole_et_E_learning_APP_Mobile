@@ -50,6 +50,33 @@ uniquement en mémoire : ils ne constituent pas un système d'authentification n
 - **Tuteur IA** (réponses simulées) et chapitres à réviser.
 - **Anti-triche** : alertes si l'étudiant quitte l'application pendant un quiz (simulation du proctoring).
 
-## Prochaines étapes (versions 2 et 3)
+## Applications séparées
+- Étudiants : `flutter run -t lib/main_student.dart`
+- Enseignants : `flutter run -t lib/main_teacher.dart`
+- Application complète (admin inclus) : `flutter run`
+
+## Design system « Neumorphism »
+- Palette claire/sombre pilotée par un `ThemeExtension` (`NeumoPalette`) : les couleurs
+  de texte, de surface et d'ombre s'adaptent au thème, donc la lisibilité est garantie
+  dans les deux modes.
+- `NeumoSurface` : carte neumorphique (ombre double, lumière en haut à gauche).
+  Les champs de saisie utilisent la variante « enfoncée » (inset).
+- `Neumo.of(context)` donne accès à la palette courante dans n'importe quel écran.
+
+## Paramètres (fonctionnels)
+- Mode sombre, contraste élevé, réduction des animations, taille du texte (0,8x → 1,4x) :
+  tout est appliqué en direct par `EcoleApp` (thème + `textScaler` + animations).
+
+## Modules ajoutés
+- Messagerie directe (étudiant ↔ enseignant ↔ admin)
+- Devoirs : création, dépôt, correction avec feedback
+- Présences : marquage par l'enseignant, assiduité côté étudiant
+- Bulletin (moyenne, notes, assiduité, bourses)
+- Analytique enseignant (progression par cours)
+- Bourses et remises dans le module finances
+- Détection des conflits d'emploi du temps
+- Tuteur IA enrichi (devoirs, moyenne, prochain cours)
+- Cours en ligne : lecteur vidéo HLS/MP4 (`video_player`) + lien visio
+  (le professeur absent / indisponible peut diffuser une vidéo ou ouvrir une classe virtuelle)
 Brancher `http`/`dio` + Keycloak, `video_player` (HLS), `firebase_messaging`, stockage local (`drift`/`hive`), vrai fournisseur Mobile Money.
 # Gestion_D-ecole_et_E_learning_APP_Mobile

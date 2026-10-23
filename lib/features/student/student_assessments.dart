@@ -78,8 +78,8 @@ class _QuizList extends StatelessWidget {
                           ),
                           Text(
                             '${s.courseById(q.courseId)?.title} • avant le ${fmtDate(q.due)}',
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 12),
+                            style: TextStyle(
+                                color: Neumo.of(context).textMuted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -158,17 +158,17 @@ class _Transcript extends StatelessWidget {
                         ),
                         Text(
                           '${e.courseTitle} • ${fmtDate(e.date)}',
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 12),
+                          style:  TextStyle(
+                              color: Neumo.of(context).textMuted, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     '${e.value.toStringAsFixed(1)}/20',
-                    style: const TextStyle(
+                    style:  TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: AppColors.text,
+                        color: Neumo.of(context).text,
                         fontSize: 16),
                   ),
                 ],
@@ -278,7 +278,7 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
                     children: [
                       Text(
                         'Question ${_i + 1} / ${widget.quiz.questions.length}',
-                        style: const TextStyle(color: AppColors.textMuted),
+                        style:  TextStyle(color: Neumo.of(context).textMuted),
                       ),
                       const SizedBox(height: 4),
                       LinearProgressIndicator(
@@ -346,7 +346,7 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
                       onPressed: () => setState(() => _i--),
                       text: 'Précédent',
                       expanded: true,
-                      color: AppColors.surface,
+                      color: Neumo.of(context).surface,
                       icon: Icons.chevron_left,
                     ),
                   ),

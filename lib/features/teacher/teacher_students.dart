@@ -37,7 +37,7 @@ class TeacherStudents extends StatelessWidget {
                       ),
                       Text(
                         s.className(st.classId),
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                        style: TextStyle(color: Neumo.of(context).textMuted, fontSize: 12),
                       ),
                     ],
                   ),

@@ -37,14 +37,14 @@ class TeacherHome extends StatelessWidget {
         const SizedBox(height: 8),
         const SectionTitle('Difficultés fréquentes (statistiques agrégées)'),
         if (quizzes.every((q) => s.difficultyOf(q).every((d) => d == 0)))
-          const AppCard(
+          AppCard(
             child: Row(
               children: [
                 Icon(Icons.insights, color: AppColors.accent),
                 SizedBox(width: 12),
                 Text(
                   'Pas encore assez de résultats pour détecter des difficultés.',
-                  style: TextStyle(color: AppColors.textMuted),
+                  style: TextStyle(color: Neumo.of(context).textMuted),
                 ),
               ],
             ),
@@ -71,8 +71,8 @@ class TeacherHome extends StatelessWidget {
                             ),
                             Text(
                               q.title,
-                              style: const TextStyle(
-                                  color: AppColors.textMuted, fontSize: 12),
+                              style:  TextStyle(
+                                  color: Neumo.of(context).textMuted, fontSize: 12),
                             ),
                           ],
                         ),

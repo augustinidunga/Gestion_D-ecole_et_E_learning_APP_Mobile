@@ -60,13 +60,13 @@ class TeacherCourses extends StatelessWidget {
                               ),
                               Text(
                                 '${s.className(c.classId)} • ${c.lessons.length} contenus',
-                                style: const TextStyle(
-                                    color: AppColors.textMuted, fontSize: 12),
+                                style: TextStyle(
+                                    color: Neumo.of(context).textMuted, fontSize: 12),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                         Icon(Icons.chevron_right, color: Neumo.of(context).textMuted),
                       ],
                     ),
                   ),
@@ -95,12 +95,16 @@ class TeacherCourseDetail extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         onPressed: () async {
-          final r = await askForm(context, 'Ajouter un contenu', const [
-            Fld('title', 'Titre'),
+          final r = await askForm(context, 'Ajouter un contenu', [
+            const Fld('title', 'Titre'),
             Fld('type', 'Type', options: {'video': 'Vidéo', 'pdf': 'Document PDF'}),
+            const Fld('url', 'URL vidéo (mp4/hls) ou document'),
+            const Fld('meeting', 'Lien visio (optionnel)'),
           ], ok: 'Ajouter');
           if (r == null || r['title']!.isEmpty) return;
-          s.addLesson(c, r['title']!, r['type'] == 'video');
+          s.addLesson(c, r['title']!, r['type'] == 'video',
+              url: r['url']!.isEmpty ? null : r['url'],
+              meetingLink: r['meeting']!.isEmpty ? null : r['meeting']);
           if (context.mounted)
             toast(context, 'Contenu ajouté, notification envoyée.');
         },
@@ -139,8 +143,8 @@ class TeacherCourseDetail extends StatelessWidget {
                           ),
                           Text(
                             '${l.isVideo ? "Vidéo" : "PDF"} • ${l.info}',
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 12),
+                            style:  TextStyle(
+                                color: Neumo.of(context).textMuted, fontSize: 12),
                           ),
                         ],
                       ),

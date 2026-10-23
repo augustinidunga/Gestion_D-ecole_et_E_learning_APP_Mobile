@@ -64,7 +64,7 @@ class AdminDashboard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'En attente : ${fmtMoney(s.totalPending)}',
-                style: const TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: Neumo.of(context).textMuted),
               ),
             ],
           ),
@@ -101,8 +101,8 @@ class AdminDashboard extends StatelessWidget {
                         n.body,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 12),
+                        style:  TextStyle(
+                            color: Neumo.of(context).textMuted, fontSize: 12),
                       ),
                     ],
                   ),
