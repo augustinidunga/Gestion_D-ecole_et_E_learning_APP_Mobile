@@ -185,6 +185,50 @@ class _LoginScreenState extends State<LoginScreen> {
                                         : 'Se connecter'),
                                   ),
                                 ),
+<<<<<<< HEAD
+=======
+                                const SizedBox(height: 22),
+                                const Divider(),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Accès de démonstration',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.text,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    ActionChip(
+                                      avatar: const Icon(
+                                          Icons.person_outline_rounded,
+                                          size: 18),
+                                      label: const Text('Étudiant'),
+                                      onPressed: () => _fill(
+                                          'etudiant@ecole.edu', 'etud123'),
+                                    ),
+                                    ActionChip(
+                                      avatar: const Icon(
+                                          Icons.cast_for_education_rounded,
+                                          size: 18),
+                                      label: const Text('Enseignant'),
+                                      onPressed: () =>
+                                          _fill('prof@ecole.edu', 'prof123'),
+                                    ),
+                                    //ActionChip(
+                                     // avatar: const Icon(
+                                          //Icons.admin_panel_settings_outlined,
+                                          //size: 18),
+                                      //label: const Text('Administrateur'),
+                                      //onPressed: () => _fill(
+                                         // 'admin@ecole.edu', 'admin123'),
+                                    //),
+                                  ],
+                                ),
+>>>>>>> a3d459e (update theme.dart and login_screen.dart)
                               ],
                             ),
                           ),
