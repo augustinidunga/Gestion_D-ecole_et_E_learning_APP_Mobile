@@ -33,15 +33,24 @@ class _QuizList extends StatelessWidget {
       for (final q in list)
         Builder(builder: (_) {
           final a = s.attemptOf(q.id, u.id);
-          final expired = a == null && q.due.isBefore(DateTime.now());
-          final (label, color) = a != null
-              ? (a.synced ? ('${a.score.toStringAsFixed(1)}/20', AppColors.accent) : ('En attente de sync', AppColors.warn))
-              : expired
-                  ? ('Expiré', AppColors.danger)
-                  : ('À faire', AppColors.primary);
+          final inProgress = a?.status == 'in_progress';
+          final expired = !inProgress && q.due.isBefore(DateTime.now());
+          final canStart =
+              inProgress || (!expired && q.attemptsUsed < q.maxAttempts);
+          final (label, color) = switch (a?.status) {
+            'in_progress' => ('En cours', AppColors.warn),
+            'submitted' => ('En correction', AppColors.warn),
+            'graded' => ('${a!.score.toStringAsFixed(1)}/20', AppColors.accent),
+            _ => expired
+                ? ('Expiré', AppColors.danger)
+                : ('À faire', AppColors.primary),
+          };
+          final deadline =
+              q.due.year < 2100 ? ' • avant le ${fmtDate(q.due)}' : '';
           return AppCard(
-            onTap: a == null && !expired
-                ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => QuizScreen(quiz: q)))
+            onTap: canStart
+                ? () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => QuizScreen(quiz: q)))
                 : null,
             child: Row(children: [
               IconBadge(Icons.quiz_rounded, color: color),
@@ -49,7 +58,8 @@ class _QuizList extends StatelessWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(q.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  Text('${s.courseById(q.courseId)?.title} • avant le ${fmtDate(q.due)}',
+                  Text(
+                      '${s.courseById(q.courseId)?.title ?? ''}$deadline • ${q.attemptsUsed}/${q.maxAttempts} tentative(s)',
                       style: const TextStyle(color: AppColors.muted, fontSize: 12)),
                 ]),
               ),
@@ -108,18 +118,41 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
-  late final List<int> _answers = List.filled(widget.quiz.questions.length, -1);
+  String? _attemptId, _error;
+  List<Question> _qs = [];
+  List<Set<int>> _sel = [];
+  List<TextEditingController> _txt = [];
   int _i = 0, _warnings = 0;
+  bool _loading = true, _sending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _start();
+  }
+
+  Future<void> _start() async {
+    final r = await context.read<AppState>().startAttempt(widget.quiz);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _error = r.error;
+      if (r.attempt != null) {
+        _attemptId = r.attempt!.id;
+        _qs = r.questions;
+        _sel = [for (final _ in _qs) <int>{}];
+        _txt = [for (final _ in _qs) TextEditingController()];
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    for (final c in _txt) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -129,16 +162,35 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _finish() async {
+    setState(() => _sending = true);
     final s = context.read<AppState>();
-    final a = s.submitQuiz(widget.quiz, _answers, _warnings);
+    final answers = [
+      for (var k = 0; k < _qs.length; k++)
+        {
+          'question': int.parse(_qs[k].id),
+          'selected_choices': [
+            for (final c in _sel[k]) int.parse(_qs[k].choiceIds[c])
+          ],
+          'text_answer': _txt[k].text,
+        }
+    ];
+    final err = await s.submitAttempt(_attemptId!, answers);
+    if (!mounted) return;
+    if (err != null) {
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      return;
+    }
+    final a = s.attempts.where((x) => x.id == _attemptId).firstOrNull;
+    final graded = a?.status == 'graded';
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: Text(a.synced ? 'Quiz corrigé' : 'Réponses enregistrées'),
-        content: Text(a.synced
-            ? 'Votre note : ${a.score.toStringAsFixed(1)}/20'
-            : 'Vous êtes hors connexion. Vos réponses seront envoyées et corrigées dès le retour du réseau.'),
+        title: Text(graded ? 'Quiz corrigé' : 'Réponses envoyées'),
+        content: Text(graded
+            ? 'Votre note : ${a!.score.toStringAsFixed(1)}/20'
+            : 'Vos réponses libres seront corrigées par l\'enseignant.'),
         actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
       ),
     );
@@ -147,10 +199,28 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final q = widget.quiz.questions[_i];
-    final last = _i == widget.quiz.questions.length - 1;
+    final title = Text(widget.quiz.title, style: const TextStyle(fontSize: 16));
+    if (_loading) {
+      return Scaffold(
+          appBar: AppBar(title: title),
+          body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null || _qs.isEmpty) {
+      return Scaffold(
+          appBar: AppBar(title: title),
+          body: Center(
+              child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(_error ?? 'Ce quiz ne contient aucune question.',
+                      textAlign: TextAlign.center))));
+    }
+    final q = _qs[_i];
+    final last = _i == _qs.length - 1;
+    final multiple = q.type == 'multiple';
+    final isText = q.type == 'text';
+    final canNext = isText || _sel[_i].isNotEmpty;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.quiz.title, style: const TextStyle(fontSize: 16))),
+      appBar: AppBar(title: title),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -166,24 +236,49 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
             ]),
           ),
           const SizedBox(height: 16),
-          LinearProgressIndicator(value: (_i + 1) / widget.quiz.questions.length),
+          LinearProgressIndicator(value: (_i + 1) / _qs.length),
           const SizedBox(height: 8),
-          Text('Question ${_i + 1} / ${widget.quiz.questions.length}', style: const TextStyle(color: AppColors.muted)),
+          Text('Question ${_i + 1} / ${_qs.length}', style: const TextStyle(color: AppColors.muted)),
           const SizedBox(height: 8),
-          Text(q.text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 16),
-          for (var k = 0; k < q.options.length; k++)
-            AppCard(
-              color: _answers[_i] == k ? AppColors.primary.withValues(alpha: .1) : Colors.white,
-              onTap: () => setState(() => _answers[_i] = k),
-              child: Row(children: [
-                Icon(_answers[_i] == k ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: AppColors.primary),
-                const SizedBox(width: 12),
-                Expanded(child: Text(q.options[k])),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(q.text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                if (multiple)
+                  const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text('Plusieurs réponses possibles',
+                          style: TextStyle(color: AppColors.muted, fontSize: 12))),
+                const SizedBox(height: 16),
+                if (isText)
+                  TextField(
+                      controller: _txt[_i],
+                      maxLines: 6,
+                      decoration: const InputDecoration(hintText: 'Votre réponse'))
+                else
+                  for (var k = 0; k < q.options.length; k++)
+                    AppCard(
+                      color: _sel[_i].contains(k) ? AppColors.primary.withValues(alpha: .1) : Colors.white,
+                      onTap: () => setState(() {
+                        if (multiple) {
+                          _sel[_i].contains(k) ? _sel[_i].remove(k) : _sel[_i].add(k);
+                        } else {
+                          _sel[_i] = {k};
+                        }
+                      }),
+                      child: Row(children: [
+                        Icon(
+                            multiple
+                                ? (_sel[_i].contains(k) ? Icons.check_box : Icons.check_box_outline_blank)
+                                : (_sel[_i].contains(k) ? Icons.radio_button_checked : Icons.radio_button_off),
+                            color: AppColors.primary),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(q.options[k])),
+                      ]),
+                    ),
               ]),
             ),
-          const Spacer(),
+          ),
           Row(children: [
             if (_i > 0)
               Expanded(
@@ -192,8 +287,10 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
             if (_i > 0) const SizedBox(width: 12),
             Expanded(
               child: FilledButton(
-                onPressed: _answers[_i] < 0 ? null : (last ? _finish : () => setState(() => _i++)),
-                child: Text(last ? 'Terminer' : 'Suivant'),
+                onPressed: !canNext || _sending
+                    ? null
+                    : (last ? _finish : () => setState(() => _i++)),
+                child: Text(_sending ? 'Envoi…' : (last ? 'Terminer' : 'Suivant')),
               ),
             ),
           ]),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
@@ -17,30 +18,15 @@ class StudentPayments extends StatelessWidget {
     }
     final r = await askForm(context, 'Payer ${fmtMoney(inv.amount)}', const [
       Fld('op', 'Opérateur Mobile Money',
-          options: {'Airtel Money': 'Airtel Money', 'Orange Money': 'Orange Money', 'M-Pesa': 'M-Pesa', 'MTN MoMo': 'MTN MoMo'}),
-      Fld('phone', 'Numéro de téléphone', number: true),
+          options: {'Lumicash': 'Lumicash', 'EcoCash': 'EcoCash'}),
+      Fld('phone', 'Numéro de téléphone (8 chiffres)', number: true),
     ], ok: 'Payer');
     if (r == null || !context.mounted) return;
-    toast(context, 'Vérification du paiement en cours…');
-    final ok = await s.payInvoice(inv, r['op']!, r['phone']!);
-    if (context.mounted) toast(context, ok ? 'Paiement confirmé, reçu disponible.' : 'Paiement refusé : numéro invalide.');
+    final err = await s.payInvoice(inv, r['op']!, r['phone']!);
+    if (!context.mounted) return;
+    toast(context,
+        err ?? 'Demande envoyée. Validez le paiement sur votre téléphone.');
   }
-
-  void _receipt(BuildContext context, Invoice i) => showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Reçu de paiement'),
-          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('N° ${i.receipt}', style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text(i.label),
-            Text('Montant : ${fmtMoney(i.amount)}'),
-            Text('Mode : ${i.method}'),
-            Text('Date : ${fmtDate(i.paidOn!)}'),
-          ]),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer'))],
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -48,37 +34,60 @@ class StudentPayments extends StatelessWidget {
     final list = s.invoicesOf(s.user!.id);
     final paid = list.where((i) => i.paid).fold(0, (a, i) => a + i.amount);
     final due = s.dueOf(s.user!.id);
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Row(children: [
-        StatTile(Icons.check_circle, 'Payé', fmtMoney(paid), color: AppColors.accent),
-        StatTile(Icons.pending_actions, 'Reste à payer', fmtMoney(due), color: AppColors.danger),
-      ]),
-      const SizedBox(height: 12),
-      const SectionTitle('Frais scolaires (tranches)'),
-      if (list.isEmpty) const EmptyState(Icons.receipt_long, 'Aucune facture.'),
-      for (final i in list)
-        AppCard(
-          onTap: i.paid ? () => _receipt(context, i) : null,
-          child: Row(children: [
-            IconBadge(i.paid ? Icons.receipt_long : Icons.payments_rounded,
-                color: i.paid ? AppColors.accent : AppColors.warn),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(i.label, style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text(i.paid ? 'Payé le ${fmtDate(i.paidOn!)} • ${i.receipt}' : 'Échéance : ${fmtDate(i.due)}',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-              ]),
-            ),
-            if (i.paid)
-              const StatusChip('Payé', AppColors.accent)
-            else
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(fmtMoney(i.amount), style: const TextStyle(fontWeight: FontWeight.w800)),
-                TextButton(onPressed: () => _pay(context, i), child: const Text('Payer')),
-              ]),
+    return RefreshIndicator(
+      onRefresh: () async {
+        try {
+          await s.loadInvoices();
+        } on ApiException {}
+      },
+      child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            Row(children: [
+              StatTile(Icons.check_circle, 'Payé', fmtMoney(paid), color: AppColors.accent),
+              StatTile(Icons.pending_actions, 'Reste à payer', fmtMoney(due), color: AppColors.danger),
+            ]),
+            const SizedBox(height: 12),
+            const SectionTitle('Frais scolaires et modules'),
+            if (list.isEmpty) const EmptyState(Icons.receipt_long, 'Aucune facture.'),
+            for (final i in list)
+              Builder(builder: (_) {
+                final (label, color) = switch (i.status) {
+                  'paid' => ('Payé', AppColors.accent),
+                  'pending' => ('En attente', AppColors.warn),
+                  'overdue' => ('En retard', AppColors.danger),
+                  _ => ('À payer', AppColors.primary),
+                };
+                final canPay = i.status == 'unpaid' || i.status == 'overdue';
+                final sub = switch (i.status) {
+                  'paid' => 'Paiement confirmé',
+                  'pending' => 'Confirmation en cours',
+                  _ => i.id.startsWith('course:')
+                      ? 'Module payant'
+                      : 'Échéance : ${fmtDate(i.due)}',
+                };
+                return AppCard(
+                  child: Row(children: [
+                    IconBadge(i.paid ? Icons.receipt_long : Icons.payments_rounded, color: color),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(i.label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(sub, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                      ]),
+                    ),
+                    if (canPay)
+                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                        Text(fmtMoney(i.amount), style: const TextStyle(fontWeight: FontWeight.w800)),
+                        TextButton(onPressed: () => _pay(context, i), child: const Text('Payer')),
+                      ])
+                    else
+                      StatusChip(label, color),
+                  ]),
+                );
+              }),
           ]),
-        ),
-    ]);
+    );
   }
 }

@@ -36,7 +36,7 @@ class ApiClient {
       _send('POST', path, body);
   Future<dynamic> patch(String path, Map<String, dynamic> body) =>
       _send('PATCH', path, body);
-
+  Future<dynamic> delete(String path) => _send('DELETE', path);
   Future<dynamic> _send(String method, String path,
       [Map<String, dynamic>? body, bool retry = true]) async {
     http.Response res;
@@ -61,8 +61,10 @@ class ApiClient {
     if (res.statusCode >= 200 && res.statusCode < 300) return data;
     throw ApiException(_errorMessage(data), res.statusCode);
   }
+  
 
   String _errorMessage(dynamic data) {
+    if (data is List && data.isNotEmpty) return data.first.toString();
     if (data is Map) {
       if (data['detail'] != null) return data['detail'].toString();
       if (data.isNotEmpty) {
@@ -73,6 +75,7 @@ class ApiClient {
     return 'Erreur serveur.';
   }
 
+  
   Future<bool> _refreshAccess() async {
     try {
       final res = await http
