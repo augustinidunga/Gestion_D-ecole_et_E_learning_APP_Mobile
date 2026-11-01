@@ -25,11 +25,21 @@ class _VideoLessonScreenState extends State<VideoLessonScreen> {
     super.initState();
     final url = widget.lesson.url;
     if (url != null && url.isNotEmpty) {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(url))
+      final uri = Uri.tryParse(url);
+      if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
+        _error = 'URL de vidéo non supportée (utilisez un lien http/https).';
+        return;
+      }
+      _controller = VideoPlayerController.networkUrl(uri)
+        ..addListener(() {
+          if (mounted && _controller != null && _controller!.value.hasError) {
+            setState(() => _error = _controller!.value.errorDescription ?? 'Erreur de lecture vidéo.');
+          }
+        })
         ..initialize().then((_) {
           if (mounted) setState(() => _ready = true);
         }).catchError((e) {
-          if (mounted) setState(() => _error = e.toString());
+          if (mounted) setState(() => _error = 'Impossible de lire la vidéo : $e');
         });
     }
   }
@@ -71,12 +81,16 @@ class _VideoLessonScreenState extends State<VideoLessonScreen> {
               Expanded(child: AppFormButton(
                 text: _controller != null && _controller!.value.isPlaying ? 'Pause' : 'Lecture',
                 icon: _controller != null && _controller!.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                onPressed: () {
-                  if (_controller == null) return;
-                  setState(() {
-                    _controller!.value.isPlaying ? _controller!.pause() : _controller!.play();
-                  });
-                },
+                 onPressed: () {
+                   if (_controller == null) return;
+                   try {
+                     setState(() {
+                       _controller!.value.isPlaying ? _controller!.pause() : _controller!.play();
+                     });
+                   } catch (e) {
+                     setState(() => _error = 'Impossible de lire la vidéo : $e');
+                   }
+                 },
               )),
               const SizedBox(width: 8),
               Expanded(child: AppFormButton(

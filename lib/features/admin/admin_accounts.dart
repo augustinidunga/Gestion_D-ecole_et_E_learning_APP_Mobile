@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
@@ -24,29 +24,29 @@ class _AdminAccountsState extends State<AdminAccounts> {
 
   Future<void> _create() async {
     final s = context.read<AppState>();
-    final r = await askForm(context, 'Créer un compte', [
+    final r = await askForm(context, 'CrÃ©er un compte', [
       const Fld('name', 'Nom complet'),
       const Fld('email', 'Email'),
       const Fld('pwd', 'Mot de passe initial', obscure: true),
-      const Fld('role', 'Rôle', options: {
-        'student': 'Étudiant',
+      const Fld('role', 'RÃ´le', options: {
+        'student': 'Ã‰tudiant',
         'teacher': 'Enseignant',
         'admin': 'Administrateur',
       }),
-      Fld('class', 'Classe (étudiants)', options: {for (final c in s.classes) c.id: c.name}),
-    ], ok: 'Créer');
+      Fld('class', 'Classe (Ã©tudiants)', options: {for (final c in s.classes) c.id: c.name}),
+    ], ok: 'CrÃ©er');
     if (r == null) return;
     if (r['name']!.isEmpty || !r['email']!.contains('@') || r['pwd']!.length < 6) {
-      if (mounted) toast(context, 'Nom, email valide et mot de passe (6 caractères min.) requis.');
+      if (mounted) toast(context, 'Nom, email valide et mot de passe (6 caractÃ¨res min.) requis.');
       return;
     }
     if (s.users.any((u) => u.email == r['email']!.toLowerCase())) {
-      if (mounted) toast(context, 'Cet email existe déjà.');
+      if (mounted) toast(context, 'Cet email existe dÃ©jÃ .');
       return;
     }
     s.createAccount(
         r['name']!, r['email']!, r['pwd']!, Role.values.byName(r['role']!), r['class']);
-    if (mounted) toast(context, 'Compte créé.');
+    if (mounted) toast(context, 'Compte crÃ©Ã©.');
   }
 
   @override
@@ -145,8 +145,8 @@ class _AdminAccountsState extends State<AdminAccounts> {
             child: list.isEmpty
                 ? const EmptyState(
                     Icons.person_search_rounded,
-                    'Aucun compte ne correspond à la recherche.',
-                    'Essayez une recherche différente.')
+                    'Aucun compte ne correspond Ã  la recherche.',
+                    'Essayez une recherche diffÃ©rente.')
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
                     children: [
@@ -186,7 +186,7 @@ class _AdminAccountsState extends State<AdminAccounts> {
                                           color: Neumo.of(context).textMuted, fontSize: 13),
                                     ),
                                     Text(
-                                      '${u.role.label}${u.classId != null ? ' • ${s.className(u.classId)}' : ''}',
+                                      '${u.role.label}${u.classId != null ? ' â€¢ ${s.className(u.classId)}' : ''}',
                                       style:  TextStyle(
                                           color: Neumo.of(context).textMuted, fontSize: 12),
                                     ),

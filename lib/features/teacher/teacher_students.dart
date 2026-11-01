@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
+import '../../data/models.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeacherStudents extends StatelessWidget {
   const TeacherStudents({super.key});
@@ -11,9 +13,10 @@ class TeacherStudents extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final list = s.studentsOfTeacher(s.user!.id);
     if (list.isEmpty)
-      return const EmptyState(Icons.groups_rounded, 'Aucun étudiant suivi.', 'Aucun étudiant n\'est affecté à cet enseignant.');
+      return const EmptyState(Icons.groups_rounded, '', '');
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [

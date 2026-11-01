@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeacherAnalytics extends StatelessWidget {
   const TeacherAnalytics({super.key});
@@ -11,21 +12,22 @@ class TeacherAnalytics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final u = s.user!;
     final st = s.teacherStats(u.id);
     final myCourses = s.myCourses;
     return Scaffold(
-      appBar: AppBar(title: const Text('Analytique')),
+      appBar: AppBar(title: Text(l10n.t('teacher.analytics.title'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          GradientHeader('Tableau de bord analytique', u.name, icon: Icons.analytics_rounded),
+          GradientHeader(l10n.t('teacher.analytics.title'), u.name, icon: Icons.analytics_rounded),
           Row(children: [
-            StatTile(Icons.menu_book_rounded, 'Cours', '${st['courses']}', color: AppColors.primary),
-            StatTile(Icons.quiz_rounded, 'Quiz', '${st['quizzes']}', color: AppColors.warn),
-            StatTile(Icons.groups_rounded, 'Étudiants', '${st['students']}', color: AppColors.info),
+            StatTile(Icons.menu_book_rounded, l10n.t('teacher.courses.title'), '${st['courses']}', color: AppColors.primary),
+            StatTile(Icons.quiz_rounded, l10n.t('student.quiz.title'), '${st['quizzes']}', color: AppColors.warn),
+            StatTile(Icons.groups_rounded, l10n.t('teacher.student.title'), '${st['students']}', color: AppColors.info),
           ]),
-          const SectionTitle('Cours et progression'),
+          SectionTitle(l10n.t('teacher.courses.detail')),
           for (final c in myCourses)
             AppCardElevated(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

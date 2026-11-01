@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
+import '../../data/models.dart';
+import '../../features/student/student_assessments.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -41,10 +43,23 @@ class NotificationsScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               children: [
-                for (final n in list)
-                  AppCardElevated(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    child: Row(
+                 for (final n in list)
+                   AppCardElevated(
+                     margin: const EdgeInsets.only(bottom: 10),
+                     onTap: () {
+                       final s = context.read<AppState>();
+                       if (n.type == 'quiz' && n.refId != null && s.user?.role == Role.student) {
+                         final q = s.quizzes.where((q) => q.id == n.refId).firstOrNull;
+                         if (q != null) {
+                           final a = s.attemptOf(q.id, s.user!.id);
+                           final expired = a == null && q.due.isBefore(DateTime.now());
+                           if (a == null && !expired) {
+                             Navigator.push(context, MaterialPageRoute(builder: (_) => QuizScreen(quiz: q)));
+                           }
+                         }
+                       }
+                     },
+                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IconBadge(_style(n.type).$1, color: _style(n.type).$2),

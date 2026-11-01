@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeacherHome extends StatelessWidget {
   const TeacherHome({super.key});
@@ -11,6 +12,7 @@ class TeacherHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final u = s.user!;
     final studs = s.studentsOfTeacher(u.id);
     final quizzes = s.myQuizzes;
@@ -20,22 +22,22 @@ class TeacherHome extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
         GradientHeader(
-          'Bonjour, ${u.name}',
-          'Espace enseignant',
+          l10n.t('home') + ', ${u.name}',
+          l10n.t('teacher.courses.title'),
           icon: Icons.cast_for_education,
           gradientColors: const [AppColors.dark, AppColors.primary],
         ),
         Row(
           children: [
-            StatTile(Icons.menu_book_rounded, 'Cours', '${s.myCourses.length}'),
-            StatTile(Icons.groups_rounded, 'Étudiants', '${studs.length}',
+            StatTile(Icons.menu_book_rounded, l10n.t('teacher.courses.title'), '${s.myCourses.length}'),
+            StatTile(Icons.groups_rounded, l10n.t('teacher.student.title'), '${studs.length}',
                 color: AppColors.accent),
-            StatTile(Icons.inbox_rounded, 'Soumissions', '$subs',
+            StatTile(Icons.inbox_rounded, l10n.t('student.payments.receipt'), '$subs',
                 color: AppColors.warn),
           ],
         ),
         const SizedBox(height: 8),
-        const SectionTitle('Difficultés fréquentes (statistiques agrégées)'),
+        SectionTitle(l10n.t('teacher.analytics.title')),
         if (quizzes.every((q) => s.difficultyOf(q).every((d) => d == 0)))
           AppCard(
             child: Row(
@@ -43,7 +45,7 @@ class TeacherHome extends StatelessWidget {
                 Icon(Icons.insights, color: AppColors.accent),
                 SizedBox(width: 12),
                 Text(
-                  'Pas encore assez de résultats pour détecter des difficultés.',
+                  l10n.t('teacher.attendance.title'),
                   style: TextStyle(color: Neumo.of(context).textMuted),
                 ),
               ],
@@ -84,7 +86,7 @@ class TeacherHome extends StatelessWidget {
                     ],
                   ),
                 ),
-        const SectionTitle('Paiements de vos étudiants'),
+        SectionTitle(l10n.t('student.payments.title')),
         for (final st in studs)
           AppCard(
             child: Row(

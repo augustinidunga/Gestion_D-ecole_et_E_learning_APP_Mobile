@@ -5,20 +5,22 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
 import '../../data/models.dart';
+import '../../l10n/app_localizations.dart';
 
 class StudentAssessments extends StatelessWidget {
   const StudentAssessments({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
           TabBar(
-            tabs: const [
-              Tab(text: 'Devoirs & quiz'),
-              Tab(text: 'Relevé de notes'),
+            tabs: [
+              Tab(text: l10n.t('student.quiz.title')),
+              Tab(text: l10n.t('student.bulletin.title')),
             ],
           ),
           Expanded(
@@ -38,9 +40,10 @@ class _QuizList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final u = s.user!;
     final list = s.myQuizzes;
-    if (list.isEmpty) return const EmptyState(Icons.quiz, 'Aucun quiz disponible.', 'Les quiz apparaîtront ici.');
+    if (list.isEmpty) return const EmptyState(Icons.quiz, '', '');
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
@@ -101,6 +104,7 @@ class _Transcript extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final g = s.gradesOf(s.user!.id);
     final avg = s.averageOf(s.user!.id);
     return ListView(
@@ -134,8 +138,7 @@ class _Transcript extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (g.isEmpty)
-          const EmptyState(Icons.grade_outlined, 'Aucune note publiée.',
-              'Les notes apparaîtront ici.')
+          const EmptyState(Icons.grade_outlined, '', '')
         else
           for (final e in g)
             AppCardElevated(
@@ -209,18 +212,19 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
 
   Future<void> _finish() async {
     final s = context.read<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final a = s.submitQuiz(widget.quiz, _answers, _warnings);
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Quiz terminé',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          l10n.t('student.quiz.title') + ' terminé',
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         content: Text(a.synced
-            ? 'Votre note : ${a.score.toStringAsFixed(1)}/20'
+            ? l10n.t('student.quiz.score') + ' : ${a.score.toStringAsFixed(1)}/20'
             : 'Vous êtes hors connexion. Vos réponses seront envoyées et corrigées dès le retour du réseau.'),
         actions: [
           FilledButton(
@@ -236,6 +240,7 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final q = widget.quiz.questions[_i];
+    final l10n = AppLocalizations.of(context)!;
     final last = _i == widget.quiz.questions.length - 1;
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -344,7 +349,7 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
                   Expanded(
                     child: AppFormButton(
                       onPressed: () => setState(() => _i--),
-                      text: 'Précédent',
+                      text: l10n.t('quiz.prev'),
                       expanded: true,
                       color: Neumo.of(context).surface,
                       icon: Icons.chevron_left,
@@ -354,7 +359,7 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
                 Expanded(
                   child: AppFormButton(
                     onPressed: _answers[_i] < 0 ? null : (last ? _finish : () => setState(() => _i++)),
-                    text: last ? 'Terminer' : 'Suivant',
+                    text: last ? l10n.t('quiz.finish') : l10n.t('quiz.next'),
                     expanded: true,
                     icon: last ? Icons.check : Icons.chevron_right,
                   ),

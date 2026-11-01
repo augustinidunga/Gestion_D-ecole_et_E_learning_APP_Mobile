@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
+import '../../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,26 +17,27 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _pwd = TextEditingController();
   bool _hide = true;
-  String? _error;
   bool _loading = false;
+  String? _error;
 
-  void _submit() async {
-    if (!_form.currentState!.validate()) return;
+  Future<void> _submit() async {
+    if (_loading || !_form.currentState!.validate()) return;
     setState(() {
       _error = null;
       _loading = true;
     });
-    final err = context.read<AppState>().login(_email.text, _pwd.text);
+    final err = await context.read<AppState>().login(_email.text, _pwd.text);
     if (!mounted) return;
-    setState(() => _loading = false);
-    if (err != null) setState(() => _error = err);
+    setState(() {
+      _loading = false;
+      _error = err;
+    });
   }
 
-  void _fill(String e, String p) => setState(() {
-        _email.text = e;
-        _pwd.text = p;
-        _error = null;
-      });
+  void _fill(String email, String pwd) {
+    _email.text = email;
+    _pwd.text = pwd;
+  }
 
   @override
   void dispose() {
@@ -46,6 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -70,10 +73,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
+                          width: 84,
+                          height: 84,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(32),
+                            borderRadius: BorderRadius.circular(26),
                             gradient: const LinearGradient(
                               colors: [AppColors.primary, AppColors.primaryLight],
                               begin: Alignment.topLeft,
@@ -87,37 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ],
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.14),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Icon(Icons.school_rounded,
-                                    color: Colors.white, size: 22),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                AppConfig.appName,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Gestion scolaire et apprentissage',
-                                style: TextStyle(color: Colors.white.withOpacity(0.85)),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
+                          child: const Icon(Icons.school_rounded,
+                              color: Colors.white, size: 44),
                         ),
                         const SizedBox(height: 20),
                         AppCard(
@@ -129,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Connexion',
+                                  l10n.t('auth.login.title'),
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w800,
@@ -138,13 +112,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Accédez à votre espace sécurisé.',
+                                  l10n.t('auth.login.subtitle'),
                                   style: TextStyle(color: Neumo.of(context).textMuted),
                                 ),
                                 const SizedBox(height: 10),
                                 AppTextFormField(
                                   controller: _email,
-                                  label: 'Adresse email',
+                                  label: l10n.t('auth.email'),
                                   icon: Icons.mail_outline_rounded,
                                   keyboardType: TextInputType.emailAddress,
                                   textInputAction: TextInputAction.next,
@@ -158,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 AppTextFormField(
                                   controller: _pwd,
-                                  label: 'Mot de passe',
+                                  label: l10n.t('auth.password'),
                                   icon: Icons.lock_outline_rounded,
                                   obscureText: _hide,
                                   textInputAction: TextInputAction.done,
@@ -218,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: double.infinity,
                                   child: AppFormButton(
                                     onPressed: _submit,
-                                    text: _loading ? '' : 'Se connecter',
+                                    text: _loading ? '' : l10n.t('auth.login.button'),
                                     icon: Icons.login_rounded,
                                     loading: _loading,
                                   ),
@@ -227,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const Divider(),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Accès de démonstration',
+                                  l10n.t('auth.demo'),
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: Neumo.of(context).text,
@@ -239,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Expanded(
                                       child: ActionButton(
                                         icon: Icons.person_outline_rounded,
-                                        label: 'Étudiant',
+                                        label: l10n.t('auth.student'),
                                         onPressed: () => _fill('etudiant@ecole.edu', 'etud123'),
                                         width: double.infinity,
                                         outlined: true,
@@ -249,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Expanded(
                                       child: ActionButton(
                                         icon: Icons.cast_for_education_rounded,
-                                        label: 'Enseignant',
+                                        label: l10n.t('auth.teacher'),
                                         onPressed: () => _fill('prof@ecole.edu', 'prof123'),
                                         width: double.infinity,
                                         outlined: true,
@@ -273,5 +247,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

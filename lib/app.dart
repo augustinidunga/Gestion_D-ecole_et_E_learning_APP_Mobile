@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
@@ -8,9 +9,10 @@ import 'features/admin/admin_shell.dart';
 import 'features/auth/login_screen.dart';
 import 'features/student/student_shell.dart';
 import 'features/teacher/teacher_shell.dart';
+import 'l10n/app_localizations.dart';
 
 /// Racine d'application : applique le thème (clair/sombre, contraste élevé),
-/// l'échelle de texte et route vers l'espace correspondant au rôle.
+/// l'échelle de texte, la langue et route vers l'espace correspondant au rôle.
 class EcoleApp extends StatelessWidget {
   final String title;
   final Role? lockedRole;
@@ -33,6 +35,17 @@ class EcoleApp extends StatelessWidget {
       theme: AppTheme.light(highContrast: state.highContrast),
       darkTheme: AppTheme.dark(highContrast: state.highContrast),
       themeMode: state.darkMode ? ThemeMode.dark : ThemeMode.light,
+      locale: state.locale,
+      supportedLocales: const [
+        Locale('fr', ''),
+        Locale('en', ''),
+      ],
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       builder: (context, child) {
         final media = MediaQuery.of(context);
         return MediaQuery(

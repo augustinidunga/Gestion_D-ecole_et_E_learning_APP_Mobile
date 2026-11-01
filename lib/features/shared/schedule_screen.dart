@@ -13,7 +13,7 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _day = DateTime.now().weekday > 6 ? 1 : DateTime.now().weekday;
+  int _day = DateTime.now().weekday == 7 ? 6 : DateTime.now().weekday;
 
   @override
   Widget build(BuildContext context) {

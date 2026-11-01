@@ -1,6 +1,18 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models.dart';
+import 'local_storage.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+
+import '../core/api_client.dart';
+import '../core/theme.dart';
+import '../core/widgets.dart';
+import '../l10n/app_localizations.dart';
 
 /// État global de l'application.
 ///
@@ -14,8 +26,13 @@ class AppState extends ChangeNotifier {
   int _seq = 100;
   String _id(String p) => '$p${_seq++}';
   DateTime get _now => DateTime.now();
+  DownloadedLessonsManager? _downloadsManager;
+  
+  DownloadedLessonsManager get _downloads {
+    _downloadsManager ??= DownloadedLessonsManager(SharedPreferences.getInstance());
+    return _downloadsManager!;
+  }
 
-  // ───────────────────────── Données (seed de démonstration) ─────────────────
   final classes = <SchoolClass>[
     const SchoolClass('c1', 'L2 Génie Logiciel'),
     const SchoolClass('c2', 'L3 Réseaux'),
@@ -63,36 +80,36 @@ class AppState extends ChangeNotifier {
         title: 'Algorithmique',
         subject: 'Informatique',
         teacherId: 't1',
-        classId: 'c1',
+classId: 'c1',
         description:
             'Structures de contrôle, tableaux, complexité et récursivité.',
-          lessons: const [
+          lessons: [
             Lesson('l1', 'Introduction aux algorithmes', true, '12 min',
-                url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
+                url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4', size: 12000000),
             Lesson('l2', 'Boucles et conditions', true, '18 min',
                 url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-                meetingLink: 'https://meet.google.com/abc-defg-hij'),
-            Lesson('l3', 'Support de cours - Chapitre 1', false, '1,2 Mo'),
+                meetingLink: 'https://meet.google.com/abc-defg-hij', size: 18000000),
+            Lesson('l3', 'Support de cours - Chapitre 1', false, '1,2 Mo', size: 1200000),
           ]),
-    Course(
+Course(
         id: 'k2',
         title: 'Bases de données',
         subject: 'Informatique',
         teacherId: 't1',
         classId: 'c1',
         description: 'Modèle relationnel, SQL et normalisation.',
-        lessons: const [
-          Lesson('l4', 'Modèle relationnel', true, '20 min'),
-          Lesson('l5', 'Requêtes SQL', false, '2,4 Mo'),
+        lessons: [
+          Lesson('l4', 'Modèle relationnel', true, '20 min', size: 20000000),
+          Lesson('l5', 'Requêtes SQL', false, '2,4 Mo', size: 2400000),
         ]),
-    Course(
+Course(
         id: 'k3',
         title: 'Administration réseaux',
         subject: 'Réseaux',
         teacherId: 't1',
         classId: 'c2',
         description: 'Adressage IP, routage et services réseau.',
-        lessons: const [Lesson('l6', 'Adressage IPv4', true, '15 min')]),
+        lessons: [Lesson('l6', 'Adressage IPv4', true, '15 min', size: 15000000)]),
   ];
 
   late final quizzes = <Quiz>[
@@ -127,13 +144,26 @@ class AppState extends ChangeNotifier {
         receipt: 'REC-0001',
         method: 'Mobile Money'),
     Invoice('f2', 's1', 'Frais scolaires - Tranche 2', 150,
-        _now.add(const Duration(days: 10))),
+        _now.subtract(const Duration(days: 30)),
+        paid: true,
+        paidOn: _now.subtract(const Duration(days: 28)),
+        receipt: 'REC-0002',
+        method: 'Mobile Money'),
     Invoice('f3', 's1', 'Frais scolaires - Tranche 3', 150,
-        _now.add(const Duration(days: 60))),
+        _now.subtract(const Duration(days: 20)),
+        paid: true,
+        paidOn: _now.subtract(const Duration(days: 18)),
+        receipt: 'REC-0003',
+        method: 'Mobile Money'),
     Invoice('f4', 's2', 'Frais scolaires - Tranche 1', 150,
-        _now.add(const Duration(days: 3))),
+        _now.add(const Duration(days: 3)),
+        paid: true,
+        paidOn: _now,
+        receipt: 'REC-0004',
+        method: 'Carte Bancaire'),
     Invoice('f5', 's3', 'Frais scolaires - Tranche 1', 150,
-        _now.add(const Duration(days: 8))),
+        _now.add(const Duration(days: 8)),
+        paid: false),
   ];
 
   late final schedule = <Slot>[
@@ -161,13 +191,20 @@ class AppState extends ChangeNotifier {
     AppNotif('n2', 'Nouveau quiz disponible', 'Quiz 1 - Bases algorithmiques',
         'quiz', _now.subtract(const Duration(hours: 5)),
         role: Role.student, classId: 'c1'),
-  ];
+];
 
-  final Set<String> downloaded = {};
   final Set<String> doneLessons = {};
   final Set<String> _read = {};
 
-  // ───────────────────────── Préférences d'affichage ─────────────────────────
+  Future<bool> isDownloaded(String lessonId) async {
+    return await _downloads.isDownloaded(lessonId);
+  }
+
+  Future<String?> getLocalPath(String lessonId) async {
+    return await _downloads.getLocalPath(lessonId);
+  }
+
+  // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Pr\u00e9f\u00e9rences d'affichage \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   bool darkMode = false;
   bool highContrast = false;
   bool reduceMotion = false;
@@ -187,6 +224,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Locale locale = const Locale('fr');
+  void setLocale(String langCode) {
+    locale = Locale(langCode);
+    notifyListeners();
+  }
+
   void setTextScale(double v) {
     textScale = v.clamp(0.8, 1.4);
     notifyListeners();
@@ -196,22 +239,55 @@ class AppState extends ChangeNotifier {
   late final messages = <ChatMessage>[];
   late final assignments = <Assignment>[];
   late final submissions = <Submission>[];
+  final Set<String> _remindedAssignments = {};
   late final attendance = <AttendanceRecord>[];
   late final scholarships = <Scholarship>[];
 
   // ───────────────────────── Auth-Service ────────────────────────────────────
-  String? login(String email, String password) {
-    final found = users.where(
-        (u) => u.email == email.trim().toLowerCase() && u.password == password);
-    if (found.isEmpty) return 'Email ou mot de passe incorrect.';
-    if (!found.first.active)
-      return 'Ce compte est suspendu. Contactez l\'administration.';
-    user = found.first;
-    notifyListeners();
-    return null;
+    Future<String?> login(String email, String password) async {
+    final mail = email.trim().toLowerCase();
+    // Comptes de démo locaux (fonctionnent sans API)
+    final demoUser = users.where((u) => u.email.toLowerCase() == mail && u.password == password).firstOrNull;
+    if (demoUser != null) {
+      user = demoUser;
+      notifyListeners();
+      pushDueReminders();
+      return null;
+    }
+    try {
+      final json = await ApiClient.instance.login(email, password);
+      user = _userFromApi(json);
+      try {
+        await loadUsers();
+      } on ApiException {}
+       try {
+         await loadCourses();
+       } on ApiException {}
+       notifyListeners();
+       pushDueReminders();
+       return null;
+    } on ApiException catch (e) {
+      if (e.status == 401) return 'Email ou mot de passe incorrect.';
+      return e.message;
+    }
   }
 
+  AppUser _userFromApi(Map<String, dynamic> j) => AppUser(
+        id: '${j['id']}',
+        name: (j['full_name'] as String?)?.trim().isNotEmpty == true
+            ? j['full_name'] as String
+            : '${j['first_name'] ?? ''} ${j['last_name'] ?? ''}'.trim(),
+        email: j['email'] as String,
+        password: '',
+        role: switch (j['role']) {
+          'admin' => Role.admin,
+          'teacher' => Role.teacher,
+          _ => Role.student,
+        },
+      );
+
   void logout() {
+    unawaited(ApiClient.instance.logout());
     user = null;
     offline = false;
     notifyListeners();
@@ -237,15 +313,32 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  void createAccount(
-      String name, String email, String pwd, Role role, String? classId) {
-    users.add(AppUser(
-        id: _id('u'),
-        name: name,
-        email: email.toLowerCase(),
-        password: pwd,
-        role: role,
-        classId: role == Role.student ? classId : null));
+  Future<String?> createAccount(
+      String name, String email, String pwd, Role role, String? classId) async {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    final mail = email.trim().toLowerCase();
+    try {
+      await ApiClient.instance.post('/users/', {
+        'username': mail, // le login envoie l'email comme username
+        'email': mail,
+        'first_name': parts.first,
+        'last_name': parts.length > 1 ? parts.sublist(1).join(' ') : '',
+        'password': pwd,
+        'role': role.name, // 'student' | 'teacher' | 'admin'
+      });
+      await loadUsers();
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<void> loadUsers() async {
+    final data = await ApiClient.instance.get('/users/');
+    final list = data is Map ? data['results'] as List : data as List;
+    users
+      ..clear()
+      ..addAll(list.map((j) => _userFromApi(j as Map<String, dynamic>)));
     notifyListeners();
   }
 
@@ -257,13 +350,28 @@ class AppState extends ChangeNotifier {
   // ───────────────────────── Academic-Service ────────────────────────────────
   Course? courseById(String id) => courses.where((c) => c.id == id).firstOrNull;
 
-  List<Course> get myCourses {
-    final u = user!;
-    return switch (u.role) {
-      Role.student => courses.where((c) => c.classId == u.classId).toList(),
-      Role.teacher => courses.where((c) => c.teacherId == u.id).toList(),
-      Role.admin => courses,
-    };
+  List<Course> get myCourses => courses;
+
+  Course _courseFromApi(Map<String, dynamic> j) => Course(
+        id: '${j['id']}',
+        title: j['title'] as String? ?? '',
+        subject: j['code'] as String? ?? '',
+        teacherId: '${j['teacher']}',
+        classId: (j['class'] ?? j['class_id'] ?? j['classroom'] ?? '').toString(),
+        description: j['description'] as String? ?? '',
+      );
+
+ 
+  Future<void> loadCourses() async {
+    final path = user?.role == Role.admin
+        ? '/academic/courses/'
+        : '/academic/courses/mine/';
+    final data = await ApiClient.instance.get(path);
+    final list = data is Map ? data['results'] as List : data as List;
+    courses
+      ..clear()
+      ..addAll(list.map((j) => _courseFromApi(j as Map<String, dynamic>)));
+    notifyListeners();
   }
 
   List<AppUser> studentsOfTeacher(String teacherId) {
@@ -279,24 +387,49 @@ class AppState extends ChangeNotifier {
     if (user?.role != Role.teacher) return;
     _addCourse(title, subject, classId, user!.id, desc);
   }
-
-  bool createAcademicCourse(String title, String subject, String classId,
-      String teacherId, String desc) {
+  Future<String?> createAcademicCourse(String title, String subject,
+      String classId, String teacherId, String desc) async {
+    if (user?.role != Role.admin) return 'Action réservée à l\'administrateur.';
     final cleanTitle = title.trim();
-    final cleanSubject = subject.trim();
-    final teacher = userById(teacherId);
-    if (user?.role != Role.admin ||
-        cleanTitle.isEmpty ||
-        cleanSubject.isEmpty ||
-        !classes.any((c) => c.id == classId) ||
-        teacher == null ||
-        teacher.role != Role.teacher ||
-        !teacher.active) {
-      return false;
+    final code = subject.trim().toUpperCase().replaceAll(' ', '');
+    if (cleanTitle.isEmpty || code.isEmpty) return 'Titre et code obligatoires.';
+    final teacher = int.tryParse(teacherId);
+    if (teacher == null) return 'Choisissez un enseignant.';
+    // Tentative via l'API ; repli local si le serveur est injoignable (mode démo).
+    try {
+      final years =
+          await ApiClient.instance.get('/academic/years/?is_current=true');
+      final yl = years is Map ? years['results'] as List : years as List;
+      await ApiClient.instance.post('/academic/courses/', {
+        'code': code,
+        'title': cleanTitle,
+        'description': desc.trim(),
+        'teacher': teacher,
+        if (int.tryParse(classId) != null) 'class': int.parse(classId),
+        if (yl.isNotEmpty) 'academic_year': yl.first['id'],
+        'is_published': true,
+      });
+      await loadCourses();
+      return null;
+    } on ApiException catch (_) {
+      // repli local
+    } catch (_) {
+      // repli local
     }
-    _addCourse(cleanTitle, cleanSubject, classId, teacherId, desc.trim());
-    return true;
-  }
+    final c = Course(
+        id: _id('k'),
+        title: cleanTitle,
+        subject: subject.trim(),
+        teacherId: teacherId,
+        classId: classId,
+        description: desc.trim());
+    courses.add(c);
+    final teacherName = userById(teacherId)?.name ?? 'l’établissement';
+    _push('Nouveau cours : $cleanTitle', 'Publié par $teacherName.', 'cours',
+        role: Role.student, classId: classId);
+    notifyListeners();
+    return null;
+  } 
 
   void _addCourse(String title, String subject, String classId,
       String teacherId, String desc) {
@@ -309,15 +442,16 @@ class AppState extends ChangeNotifier {
         description: desc));
     final teacherName = userById(teacherId)?.name ?? 'l’établissement';
     _push('Nouveau cours : $title', 'Publié par $teacherName.', 'cours',
-        role: Role.student, classId: classId);
+        role: Role.student, classId: classId.isEmpty ? null : classId);
     notifyListeners();
   }
 
-  void addLesson(Course c, String title, bool video, {String? url, String? meetingLink}) {
+  void addLesson(Course c, String title, bool video,
+      {String? url, String? meetingLink, bool isPhoto = false, int size = 0}) {
     c.lessons.add(Lesson(_id('l'), title, video, video ? '10 min' : '1 Mo',
-        url: url, meetingLink: meetingLink));
+        url: url, meetingLink: meetingLink, isPhoto: isPhoto, size: size));
     _push('Nouveau contenu : ${c.title}', title, 'cours',
-        role: Role.student, classId: c.classId);
+        role: Role.student, classId: c.classId.isEmpty ? null : c.classId);
     notifyListeners();
   }
 
@@ -391,12 +525,45 @@ class AppState extends ChangeNotifier {
   }
 
   // ───────────────────────── Media-Service ───────────────────────────────────
-  void toggleDownload(Lesson l) {
-    downloaded.contains(l.id) ? downloaded.remove(l.id) : downloaded.add(l.id);
+  /// Télécharge ou supprime un fichier localement (persistant SharedPreferences)
+  Future<void> toggleDownload(Lesson l) async {
+    final isDownloaded = await _downloads.isDownloaded(l.id);
+    if (isDownloaded) {
+      // Supprimer le fichier local
+      final localPath = await _downloads.getLocalPath(l.id);
+      if (localPath != null) {
+        try {
+          await File(localPath).delete();
+        } catch (_) {}
+      }
+      await _downloads.deleteDownload(l.id);
+    } else {
+      // Télécharger le fichier depuis l'URL
+      if (l.url == null || l.url!.isEmpty) return;
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final fileName = '${l.id}_${l.title.replaceAll(RegExp(r'[^\w\.]'), '_')}';
+        final file = File('${dir.path}/$fileName');
+        
+        final client = http.Client();
+        final response = await client.get(Uri.parse(l.url!));
+        if (response.statusCode == 200) {
+          await file.writeAsBytes(response.bodyBytes);
+          await _downloads.saveDownload(l.id, file.path, response.bodyBytes.length, l.url);
+        }
+        client.close();
+      } catch (e) {
+        // Erreur de téléchargement, ignorer silencieusement
+      }
+    }
     notifyListeners();
   }
 
-  bool canOpen(Lesson l) => !offline || downloaded.contains(l.id);
+  /// Vérifie si le fichier est accessible (en ligne ou téléchargé)
+  Future<bool> canOpen(Lesson l) async {
+    if (!offline) return true;
+    return await isDownloaded(l.id);
+  }
 
   void markDone(Lesson l) {
     if (doneLessons.add(l.id)) notifyListeners();
@@ -431,14 +598,16 @@ class AppState extends ChangeNotifier {
 
   void createQuiz(String courseId, String title, int days, List<Question> qs) {
     final c = courseById(courseId)!;
+    final quizId = _id('q');
     quizzes.add(
-        Quiz(_id('q'), courseId, title, _now.add(Duration(days: days)), qs));
+        Quiz(quizId, courseId, title, _now.add(Duration(days: days)), qs));
     _push(
         'Nouveau quiz : $title',
         '${c.title} - à rendre avant ${_fmt(_now.add(Duration(days: days)))}',
         'quiz',
         role: Role.student,
-        classId: c.classId);
+        classId: c.classId.isEmpty ? null : c.classId,
+        refId: quizId);
     notifyListeners();
   }
 
@@ -471,6 +640,10 @@ class AppState extends ChangeNotifier {
     for (final a in attempts.where((a) => !a.synced)) {
       a.synced = true;
       _notifyResult(a);
+    }
+    for (final sub in submissions.where((s) => !s.synced)) {
+      sub.synced = true;
+      _push('Devoir synchronisé', sub.content, 'cours', userId: sub.studentId);
     }
     notifyListeners();
   }
@@ -505,6 +678,14 @@ class AppState extends ChangeNotifier {
   int get totalPending =>
       invoices.where((i) => !i.paid).fold(0, (s, i) => s + i.amount);
 
+  void resetInvoice(Invoice inv) {
+    inv.paid = false;
+    inv.paidOn = null;
+    inv.receipt = null;
+    inv.method = null;
+    notifyListeners();
+  }
+
   void createInvoice(String studentId, String label, int amount, int days) {
     invoices.add(Invoice(
         _id('f'), studentId, label, amount, _now.add(Duration(days: days))));
@@ -525,15 +706,51 @@ class AppState extends ChangeNotifier {
         'REC-${(1000 + invoices.where((i) => i.paid).length).toString()}';
     _push('Paiement confirmé', '${inv.label} - reçu ${inv.receipt}', 'paiement',
         userId: inv.studentId);
+    _push('Paiement reçu', '${userById(inv.studentId)?.name ?? inv.studentId} - ${inv.label} (${inv.receipt})',
+        'paiement', role: Role.admin);
     notifyListeners();
     return true;
   }
 
-  // ───────────────────────── Notification-Service ────────────────────────────
+  String receiptText(Invoice inv) {
+    if (!inv.paid || inv.receipt == null || inv.paidOn == null) return '';
+    final user = userById(inv.studentId);
+    final className = classes.where((c) => c.id == user?.classId).firstOrNull?.name ?? '-';
+    return """RECU DE PAIEMENT
+====================
+Etablissement : ${AppConfig.appName}
+No recu : ${inv.receipt}
+Eleve : ${user?.name ?? inv.studentId}
+Filiere : $className
+Libelle : ${inv.label}
+Montant : ${fmtMoney(inv.amount)}
+Mode de paiement : ${inv.method ?? '-'}
+Date de paiement : ${fmtDate(inv.paidOn!)}
+Heure de paiement : ${inv.paidOn!.hour.toString().padLeft(2, '0')}:${inv.paidOn!.minute.toString().padLeft(2, '0')}:${inv.paidOn!.second.toString().padLeft(2, '0')}
+Statut : Paye
+====================
+Merci pour votre confiance.
+""";
+  }
+
+  /// Genere et enregistre un fichier recu telechargeable sur l'appareil.
+  Future<String?> downloadReceipt(Invoice inv) async {
+    final content = receiptText(inv);
+    if (content.isEmpty) return null;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/recu_${inv.receipt}.txt');
+      await file.writeAsString(content);
+      return file.path;
+    } catch (_) {
+      return null;
+    }
+  }
+  // ─── Notification-Service ───
   void _push(String title, String body, String type,
-      {Role? role, String? userId, String? classId}) {
+      {Role? role, String? userId, String? classId, String? refId}) {
     notifs.add(AppNotif(_id('n'), title, body, type, _now,
-        role: role, userId: userId, classId: classId));
+        role: role, userId: userId, classId: classId, refId: refId));
   }
 
   void announce(String title, String body, Role? role) {
@@ -654,14 +871,34 @@ class AppState extends ChangeNotifier {
         .where((c) => c.classId == u?.classId)
         .map((c) => c.id)
         .toSet();
-    return assignments.where((a) => courseIds.contains(a.courseId)).toList()
+    return assignments.where((a) {
+      if (!courseIds.contains(a.courseId)) return false;
+      if (a.isGroup && a.groupMembers.isNotEmpty) {
+        return a.groupMembers.contains(studentId);
+      }
+      return true;
+    }).toList()
       ..sort((a, b) => a.due.compareTo(b.due));
   }
 
-  void createAssignment(String courseId, String title, String desc, int days) {
+  void createAssignment(String courseId, String title, String desc, DateTime due,
+      {bool isGroup = false,
+      List<String> groupMembers = const [],
+      Map<String, String> groupRoles = const {},
+      List<RubricCriterion> rubric = const [],
+      String submissionType = 'text',
+      int maxSizeMb = 10,
+      double latePenaltyPerDay = 0}) {
     if (user?.role != Role.teacher) return;
     final a = Assignment(_id('as'), courseId, title.trim(), desc.trim(),
-        _now.add(Duration(days: days)), user!.id);
+        due, user!.id,
+        isGroup: isGroup,
+        groupMembers: groupMembers,
+        groupRoles: groupRoles,
+        rubric: rubric,
+        submissionType: submissionType,
+        maxSizeMb: maxSizeMb,
+        latePenaltyPerDay: latePenaltyPerDay);
     assignments.add(a);
     final c = courseById(courseId);
     _push('Nouveau devoir : ${a.title}', c?.title ?? '', 'cours',
@@ -677,29 +914,169 @@ class AppState extends ChangeNotifier {
   List<Submission> submissionsForAssignment(String assignmentId) =>
       submissions.where((s) => s.assignmentId == assignmentId).toList();
 
-  void submitAssignment(String assignmentId, String content) {
+  void submitAssignment(String assignmentId, String content,
+      {List<String> attachments = const []}) {
     if (user?.role != Role.student) return;
-    final existing = submissionOf(assignmentId, user!.id);
-    if (existing != null) {
-      existing.content = content;
-      existing.date = _now;
+    final a = assignments.where((x) => x.id == assignmentId).firstOrNull;
+    if (a != null && a.due.isBefore(_now)) return; // échéance dépassée
+    final uid = user!.id;
+    // Groupe : dépôt partagé
+    if (a != null && a.isGroup && a.groupMembers.isNotEmpty) {
+      final members = a.groupMembers;
+      Submission? existing;
+      for (final sub in submissions) {
+        if (sub.assignmentId == assignmentId && members.contains(sub.studentId)) {
+          existing = sub;
+          break;
+        }
+      }
+      final version = SubmissionVersion(content.trim(), attachments, _now);
+      if (existing != null) {
+        existing.content = content.trim();
+        existing.attachments = attachments;
+        existing.date = _now;
+        existing.versions.add(version);
+        if (!existing.contributors.contains(uid)) existing.contributors.add(uid);
+        existing.synced = !offline;
+      } else {
+        final leader = members.first;
+        submissions.add(Submission(
+            _id('sub'), assignmentId, leader, content.trim(), _now,
+            attachments: attachments, versions: [version], contributors: [uid], synced: !offline));
+      }
     } else {
-      submissions.add(Submission(
-          _id('sub'), assignmentId, user!.id, content.trim(), _now));
+      final existing = submissionOf(assignmentId, uid);
+      final version = SubmissionVersion(content.trim(), attachments, _now);
+      if (existing != null) {
+        existing.content = content.trim();
+        existing.attachments = attachments;
+        existing.date = _now;
+        existing.versions.add(version);
+        existing.synced = !offline;
+      } else {
+        submissions.add(Submission(
+            _id('sub'), assignmentId, uid, content.trim(), _now,
+            attachments: attachments, versions: [version], synced: !offline));
+      }
+    }
+    if (!offline) {
+      _push('Devoir rendu', content.trim(), 'cours', userId: uid);
     }
     notifyListeners();
   }
 
-  void gradeSubmission(String submissionId, double grade, String feedback) {
+  void gradeSubmission(String submissionId, double grade, String feedback,
+      {List<RubricCriterion> rubricScores = const []}) {
     final s = submissions.firstWhere((e) => e.id == submissionId);
-    s.grade = grade;
+    final a = assignments.where((x) => x.id == s.assignmentId).firstOrNull;
+    var finalGrade = grade;
+    if (a != null && a.latePenaltyPerDay > 0 && s.date.isAfter(a.due)) {
+      final daysLate = s.date.difference(a.due).inDays + 1;
+      finalGrade = (grade - a.latePenaltyPerDay * daysLate).clamp(0, 20);
+    }
+    s.grade = finalGrade;
     s.feedback = feedback;
-    _push('Devoir corrigé', '${grade.toStringAsFixed(1)}/20', 'note',
+    s.rubricScores = rubricScores;
+    _push('Devoir corrigé', '${finalGrade.toStringAsFixed(1)}/20', 'note',
         userId: s.studentId);
     notifyListeners();
   }
 
-  // ───────────────────────── Présences ────────────────────────────────────────
+  // ───────────────────────── Devoirs - statistiques / plagiat / IA ─────────────
+  Map<String, dynamic> assignmentStats(String assignmentId) {
+    final subs = submissionsForAssignment(assignmentId);
+    final graded = subs.where((s) => s.grade != null).toList();
+    final avg = graded.isEmpty ? null : graded.map((s) => s.grade!).reduce((a, b) => a + b) / graded.length;
+    return {
+      'total': subs.length,
+      'graded': graded.length,
+      'pending': subs.length - graded.length,
+      'average': avg,
+      'late': subs.where((s) {
+        final a = assignments.firstWhere((x) => x.id == assignmentId);
+        return s.date.isAfter(a.due);
+      }).length,
+    };
+  }
+
+  String exportAssignmentCsv(String assignmentId) {
+    final a = assignments.firstWhere((x) => x.id == assignmentId);
+    final subs = submissionsForAssignment(assignmentId);
+    final buf = StringBuffer();
+    buf.writeln('Devoir;${a.title}');
+    buf.writeln('Etudiant;Note;Date;En retard;Feedback');
+    for (final s in subs) {
+      final st = userById(s.studentId);
+      final late = s.date.isAfter(a.due) ? 'Oui' : 'Non';
+      buf.writeln('${st?.name ?? s.studentId};${s.grade?.toStringAsFixed(2) ?? ''};${fmtDate(s.date)};$late;${s.feedback ?? ''}');
+    }
+    return buf.toString();
+  }
+
+  double similarity(String a, String b) {
+    final wa = a.toLowerCase().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toSet();
+    final wb = b.toLowerCase().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toSet();
+    if (wa.isEmpty || wb.isEmpty) return 0;
+    final inter = wa.intersection(wb).length;
+    return inter / (wa.length + wb.length - inter);
+  }
+
+  Map<String, double> plagiarismReport(String assignmentId) {
+    final subs = submissionsForAssignment(assignmentId);
+    final out = <String, double>{};
+    for (var i = 0; i < subs.length; i++) {
+      for (var j = i + 1; j < subs.length; j++) {
+        final sim = similarity(subs[i].content, subs[j].content);
+        if (sim >= 0.6) {
+          out['${subs[i].studentId}-${subs[j].studentId}'] = sim;
+        }
+      }
+    }
+    return out;
+  }
+
+  String suggestFeedback(String content, double grade) {
+    if (grade >= 16) return 'Excellent travail, très bien structuré. Continuez ainsi.';
+    if (grade >= 12) return 'Bon travail, quelques points à améliorer (clarté, exemples).';
+    if (grade >= 8) return 'Travail acceptable mais incomplet ; approfondir les notions.';
+    return 'Travail insuffisant ; revoir les bases et resoumettre.';
+  }
+  void gradeGroupMember(String submissionId, String studentId, double grade, String feedback) {
+    final sub = submissions.firstWhere((e) => e.id == submissionId);
+    sub.memberGrades[studentId] = grade;
+    sub.memberFeedback[studentId] = feedback;
+    _push('Devoir corrigé', '${grade.toStringAsFixed(1)}/20', 'note', userId: studentId);
+    notifyListeners();
+  }
+
+  List<Assignment> dueSoonAssignments(String studentId, {int withinDays = 2}) {
+    final now = DateTime.now();
+    final limit = now.add(Duration(days: withinDays));
+    return assignmentsForStudent(studentId).where((a) => a.due.isAfter(now) && a.due.isBefore(limit)).toList();
+  }
+
+  void pushDueReminders() {
+    if (user?.role != Role.student) return;
+    final uid = user!.id;
+    for (final a in dueSoonAssignments(uid)) {
+      if (_remindedAssignments.contains(a.id)) continue;
+      final sub = submissionOf(a.id, uid);
+      if (sub != null) continue;
+      _remindedAssignments.add(a.id);
+      _push('Rappel devoir', '${a.title} à rendre avant le ${fmtDate(a.due)}', 'cours', userId: uid);
+    }
+    for (final a in assignmentsForStudent(uid)) {
+      if (a.due.isBefore(DateTime.now())) {
+        final sub = submissionOf(a.id, uid);
+        if (sub == null && !_remindedAssignments.contains('late_${a.id}')) {
+          _remindedAssignments.add('late_${a.id}');
+          _push('Devoir en retard', '${a.title} (échéance dépassée)', 'cours', userId: uid);
+        }
+      }
+    }
+    notifyListeners();
+  }
+
   void markAttendance(String classId, String studentId, DateTime date, bool present,
       {String? note}) {
     final day = DateTime(date.year, date.month, date.day);
@@ -814,4 +1191,20 @@ class AppState extends ChangeNotifier {
       'students': studentsOfTeacher(teacherId).length,
     };
   }
+
+  // ------------------------- Inscriptions élèves -----------------------------
+  Future<String?> enrollStudent(String studentId, String courseId) async {
+    if (user?.role != Role.admin) return 'Action réservée à l\'administrateur.';
+    try {
+      await ApiClient.instance.post('/academic/enrollments/', {
+        'student': int.parse(studentId),
+        'course': int.parse(courseId),
+      });
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
 }
+
+

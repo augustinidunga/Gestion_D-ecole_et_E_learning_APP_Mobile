@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
 import '../../data/models.dart';
+import '../../l10n/app_localizations.dart';
 import '../shared/video_player_screen.dart';
 
 class StudentCourses extends StatelessWidget {
@@ -13,8 +15,9 @@ class StudentCourses extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.read<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final list = s.myCourses;
-    if (list.isEmpty) return const EmptyState(Icons.menu_book, 'Aucun cours pour votre classe.', 'Commencez à suivre vos cours.');
+    if (list.isEmpty) return const EmptyState(Icons.menu_book, '', '');
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
@@ -68,7 +71,7 @@ class StudentCourses extends StatelessWidget {
                     TextButton(
                       onPressed: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => CourseDetail(courseId: c.id))),
-                      child: const Text('Voir les détails'),
+                      child: Text(l10n.t('student.courses.detail')),
                     ),
                   ],
                 ),
@@ -87,6 +90,7 @@ class CourseDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final c = s.courseById(courseId)!;
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -103,25 +107,25 @@ class CourseDetail extends StatelessWidget {
             c.description,
             icon: Icons.menu_book_rounded,
           ),
-          const SectionTitle('Contenus du cours'),
+          SectionTitle(l10n.t('student.courses.lessons')),
           if (c.lessons.isEmpty)
-            const EmptyState(Icons.hourglass_empty, 'Aucun contenu publié pour l\'instant.',
-                'Revenez plus tard pour de nouveaux contenus.')
+            const EmptyState(Icons.hourglass_empty, '', '')
           else
             for (final l in c.lessons)
               AppCardElevated(
                 margin: const EdgeInsets.only(bottom: 12),
-                onTap: () {
-                  if (!s.canOpen(l)) {
+onTap: () async {
+                  final canOpen = await s.canOpen(l);
+                  if (!canOpen) {
                     toast(context, 'Hors connexion : téléchargez ce contenu avant de le consulter.');
                     return;
                   }
-                   s.markDone(l);
-                   if (l.isVideo) {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => VideoLessonScreen(lesson: l)));
-                   } else {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => LessonViewer(lesson: l)));
-                   }
+                  s.markDone(l);
+                  if (l.isVideo) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => VideoLessonScreen(lesson: l)));
+                  } else {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => LessonViewer(lesson: l)));
+                  }
                 },
                 child: Row(
                   children: [
@@ -139,7 +143,7 @@ class CourseDetail extends StatelessWidget {
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                           Text(
-                            '${l.isVideo ? "Vidéo" : "PDF"} • ${l.info}',
+                            '${l.isVideo ? l10n.t('student.courses.video') : l10n.t('student.courses.pdf')} • ${l.info}',
                             style:  TextStyle(
                                 color: Neumo.of(context).textMuted, fontSize: 12),
                           ),
@@ -163,17 +167,23 @@ class CourseDetail extends StatelessWidget {
                         ),
                       ),
                     IconButton(
-                      tooltip: 'Télécharger',
-                      onPressed: s.offline && !s.downloaded.contains(l.id)
+                      tooltip: l10n.t('download'),
+                      onPressed: s.offline
                           ? null
                           : () => s.toggleDownload(l),
-                      icon: Icon(
-                        s.downloaded.contains(l.id)
-                            ? Icons.download_done
-                            : Icons.download_outlined,
-                        color: s.downloaded.contains(l.id)
-                            ? AppColors.accent
-                            : Neumo.of(context).textMuted,
+                      icon: FutureBuilder<bool>(
+                        future: s.isDownloaded(l.id),
+                        builder: (context, snapshot) {
+                          final isDownloaded = snapshot.data ?? false;
+                          return Icon(
+                            isDownloaded
+                                ? Icons.download_done
+                                : Icons.download_outlined,
+                            color: isDownloaded
+                                ? AppColors.accent
+                                : Neumo.of(context).textMuted,
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -193,12 +203,36 @@ class LessonViewer extends StatefulWidget {
 }
 
 class _LessonViewerState extends State<LessonViewer> {
-  bool _play = false;
-  double _pos = 0;
+  String? _localPath;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdf();
+  }
+
+  Future<void> _loadPdf() async {
+    final s = context.read<AppState>();
+    final l = widget.lesson;
+    String? path;
+    if (await s.isDownloaded(l.id)) {
+      path = await s.getLocalPath(l.id);
+    } else if (l.url != null && l.url!.isNotEmpty) {
+      path = l.url;
+    }
+    if (mounted) {
+      setState(() {
+        _localPath = path;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = widget.lesson;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -206,92 +240,36 @@ class _LessonViewerState extends State<LessonViewer> {
         backgroundColor: Colors.transparent,
         title: Text(l.title, style: const TextStyle(fontSize: 16)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: l.isVideo ? AppColors.dark : Neumo.of(context).surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Center(
-                child: Icon(
-                  l.isVideo
-                      ? (_play ? Icons.pause_circle : Icons.play_circle)
-                      : Icons.picture_as_pdf,
-                  size: 72,
-                  color: l.isVideo ? Colors.white : AppColors.danger,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _localPath == null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.picture_as_pdf, size: 72, color: AppColors.danger),
+                      const SizedBox(height: 16),
+                      Text('Fichier PDF non disponible',
+                          style: TextStyle(color: Neumo.of(context).textMuted)),
+                    ],
+                  ),
+                )
+              : PDFView(
+                  filePath: _localPath!,
+                  enableSwipe: true,
+                  swipeHorizontal: false,
+                  autoSpacing: true,
+                  pageFling: true,
+                  pageSnap: true,
+                  defaultPage: 0,
+                  fitPolicy: FitPolicy.BOTH,
+                  onError: (error) {
+                    toast(context, 'Erreur chargement PDF: $error');
+                  },
+                  onRender: (pages) {
+                    // PDF rendu avec $pages pages
+                  },
                 ),
-              ),
-            ),
-            if (l.isVideo) ...[
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Progression',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Neumo.of(context).textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        LinearProgressIndicator(
-                          value: _pos,
-                          minHeight: 10,
-                          backgroundColor: AppColors.border,
-                          color: AppColors.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${(_pos * 100).round()} %',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppFormButton(
-                      onPressed: () => setState(() => _play = !_play),
-                      text: _play ? 'Pause' : 'Lecture',
-                      icon: _play ? Icons.pause : Icons.play_arrow,
-                      expanded: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Diffusion adaptative HLS (360p à 1080p) - lecteur simulé.',
-                style:  TextStyle(fontSize: 11, color: Neumo.of(context).textMuted),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

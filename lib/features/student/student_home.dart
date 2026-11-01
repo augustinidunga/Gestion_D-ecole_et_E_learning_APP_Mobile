@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
+import '../../features/student/student_assessments.dart';
+import '../../l10n/app_localizations.dart';
 
 class StudentHome extends StatelessWidget {
   const StudentHome({super.key});
@@ -11,6 +13,7 @@ class StudentHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final u = s.user!;
     final avg = s.averageOf(u.id);
     final next = s.nextSlot(u.classId);
@@ -22,7 +25,7 @@ class StudentHome extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
         GradientHeader(
-          'Bonjour, ${u.name.split(' ').first}',
+          l10n.t('home.greeting') + ', ${u.name.split(' ').first}',
           s.className(u.classId),
           icon: Icons.person_rounded,
           gradientColors: const [AppColors.primary, AppColors.primaryLight],
@@ -31,35 +34,35 @@ class StudentHome extends StatelessWidget {
           children: [
             StatTile(
               Icons.grade_rounded,
-              'Moyenne',
+              l10n.t('student.bulletin.average'),
               avg == null ? '-' : '${avg.toStringAsFixed(1)}/20',
               color: AppColors.accent,
             ),
             StatTile(
               Icons.quiz_rounded,
-              'Quiz à faire',
+              l10n.t('student.quiz.title') + ' ' + l10n.t('home').toLowerCase(),
               '${todo.length}',
               color: AppColors.warn,
             ),
             StatTile(
               Icons.account_balance_wallet_rounded,
-              'Solde dû',
+              l10n.t('student.payments.due'),
               fmtMoney(s.dueOf(u.id)),
               color: AppColors.danger,
             ),
           ],
         ),
         const SizedBox(height: 8),
-        const SectionTitle('Prochain cours'),
+        SectionTitle(l10n.t('student.courses.next')),
         if (next == null)
           AppCard(
             child: Row(
               children: [
                 IconBadge(Icons.schedule, color: Neumo.of(context).textMuted),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Aucun cours programmé.',
+                    l10n.t('student.courses.no.courses'),
                     style: TextStyle(color: Neumo.of(context).textMuted),
                   ),
                 ),
@@ -83,7 +86,7 @@ class StudentHome extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${next.$2 == 0 ? "Aujourd\'hui" : weekdays[DateTime.now().add(Duration(days: next.$2)).weekday]} • ${next.$1.start}-${next.$1.end} • ${next.$1.room}',
+                        '${next.$2 == 0 ? l10n.t('home').toLowerCase() : weekdays[DateTime.now().add(Duration(days: next.$2)).weekday % 7]} • ${next.$1.start}-${next.$1.end} • ${next.$1.room}',
                         style:  TextStyle(
                             color: Neumo.of(context).textMuted, fontSize: 12),
                       ),
@@ -93,7 +96,7 @@ class StudentHome extends StatelessWidget {
               ],
             ),
           ),
-        const SectionTitle('À faire'),
+        SectionTitle(l10n.t('student.courses.todo')),
         if (todo.isEmpty)
           const AppCard(
             child: Row(
@@ -107,6 +110,10 @@ class StudentHome extends StatelessWidget {
         else
           for (final q in todo)
             AppCard(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => QuizScreen(quiz: q)),
+              ),
               child: Row(
                 children: [
                   const IconBadge(Icons.quiz_rounded, color: AppColors.warn),
@@ -132,11 +139,11 @@ class StudentHome extends StatelessWidget {
                 ],
               ),
             ),
-        const SectionTitle('Dernières notes'),
+        SectionTitle(l10n.t('student.bulletin.title')),
         if (grades.isEmpty)
           AppCard(
             child: Text(
-              'Aucune note publiée pour le moment.',
+              l10n.t('student.payments.no.invoices.sub'),
               style: TextStyle(color: Neumo.of(context).textMuted),
             ),
           )

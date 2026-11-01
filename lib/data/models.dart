@@ -39,10 +39,16 @@ class AppUser {
 class Lesson {
   final String id, title;
   final bool isVideo;
+  final bool isPhoto;
   final String info; // durée ou taille
   final String? url; // URL vidéo ou document
+  final String? localPath; // chemin local si téléchargé
   final String? meetingLink; // lien visio (Zoom/Meet/Teams)
-  const Lesson(this.id, this.title, this.isVideo, this.info, {this.url, this.meetingLink});
+  final int size; // taille en octets
+  final DateTime uploadedAt;
+  Lesson(this.id, this.title, this.isVideo, this.info,
+      {this.url, this.localPath, this.meetingLink, this.isPhoto = false, this.size = 0, DateTime? uploadedAt})
+      : uploadedAt = uploadedAt ?? DateTime.now();
 }
 
 class Course {
@@ -119,9 +125,9 @@ class AppNotif {
   final String id, title, body, type; // cours, quiz, note, paiement, annonce
   final DateTime date;
   final Role? role;
-  final String? userId, classId;
+  final String? userId, classId, refId; // refId = id de l'entité liée (ex. quiz)
   const AppNotif(this.id, this.title, this.body, this.type, this.date,
-      {this.role, this.userId, this.classId});
+      {this.role, this.userId, this.classId, this.refId});
 }
 
 class Slot {
@@ -147,18 +153,54 @@ class ChatMessage {
 class Assignment {
   final String id, courseId, title, description, teacherId;
   final DateTime due;
+  final bool isGroup;
+  final List<String> groupMembers;
+  final Map<String, String> groupRoles;
+  final List<RubricCriterion> rubric;
+  final String submissionType;
+  final int maxSizeMb;
+  final double latePenaltyPerDay;
   const Assignment(this.id, this.courseId, this.title, this.description,
-      this.due, this.teacherId);
+      this.due, this.teacherId,
+      {this.isGroup = false,
+      this.groupMembers = const [],
+      this.groupRoles = const {},
+      this.rubric = const [],
+      this.submissionType = 'text',
+      this.maxSizeMb = 10,
+      this.latePenaltyPerDay = 0});
 }
 
+/// Critère de rubrique de correction.
+class RubricCriterion {
+  final String label;
+  final double weight; // pondération (somme = 1)
+  final double? score; // note obtenue (sur 20)
+  const RubricCriterion(this.label, this.weight, {this.score});
+  RubricCriterion copyWith({double? score}) => RubricCriterion(label, weight, score: score ?? this.score);
+}
+
+class SubmissionVersion {
+  final String content;
+  final List<String> attachments;
+  final DateTime date;
+  const SubmissionVersion(this.content, this.attachments, this.date);
+}
 class Submission {
-  String content;
   final String id, assignmentId, studentId;
+  String content;
   DateTime date;
   double? grade;
   String? feedback;
+  List<String> attachments;
+  List<SubmissionVersion> versions;
+  List<RubricCriterion> rubricScores;
+  List<String> contributors;
+  Map<String, double> memberGrades;
+  Map<String, String> memberFeedback;
+  bool synced;
   Submission(this.id, this.assignmentId, this.studentId, this.content, this.date,
-      {this.grade, this.feedback});
+      {this.grade, this.feedback, this.attachments = const [], this.versions = const [], this.rubricScores = const [], this.contributors = const [], this.memberGrades = const {}, this.memberFeedback = const {}, this.synced = true});
 }
 
 /// Enregistrement de présence.

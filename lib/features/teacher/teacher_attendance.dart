@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
 import '../../data/models.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeacherAttendance extends StatefulWidget {
   const TeacherAttendance({super.key});
@@ -19,11 +20,12 @@ class _TeacherAttendanceState extends State<TeacherAttendance> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final classes = s.classes;
     _class ??= classes.isNotEmpty ? classes.first : null;
     final students = s.students.where((st) => st.classId == _class?.id).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Présences')),
+      appBar: AppBar(title: Text(l10n.t('teacher.attendance.title'))),
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.all(12),
@@ -31,7 +33,7 @@ class _TeacherAttendanceState extends State<TeacherAttendance> {
             Expanded(
               child: AppDropdownFormField<SchoolClass>(
                 value: _class,
-                label: 'Classe',
+                label: l10n.t('admin.classes.title'),
                 icon: Icons.class_rounded,
                 items: [for (final c in classes) DropdownMenuEntry(value: c, label: c.name)],
                 onChanged: (v) => setState(() => _class = v),
@@ -52,7 +54,7 @@ class _TeacherAttendanceState extends State<TeacherAttendance> {
         ),
         Expanded(
           child: students.isEmpty
-              ? const EmptyState(Icons.groups_outlined, 'Aucun étudiant')
+              ? const EmptyState(Icons.groups_outlined, '', '')
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: students.length,

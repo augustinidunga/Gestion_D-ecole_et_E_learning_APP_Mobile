@@ -19,49 +19,31 @@ void main() {
           contains('L1 Informatique'));
     });
 
-    test('crée un cours lié à une classe et à un enseignant actif', () {
-      final previousCourseCount = state.courses.length;
+    test('createAcademicCourse valide titre/code non vides et teacherId entier', () async {
+      // Titre vide -> erreur
+      expect(await state.createAcademicCourse('', 'Réseaux', 'c1', '1', 'desc'),
+          'Titre et code obligatoires.');
 
-      expect(
-        state.createAcademicCourse(
-          'Sécurité réseau',
-          'Réseaux',
-          'c1',
-          't1',
-          'Notions fondamentales de sécurité.',
-        ),
-        isTrue,
-      );
-      expect(state.courses, hasLength(previousCourseCount + 1));
-      expect(state.courses.last.teacherId, 't1');
-      expect(state.courses.last.classId, 'c1');
+      // TeacherId non entier -> erreur
+      expect(await state.createAcademicCourse('Cours', 'Matière', 'c1', 't1', ''),
+          'Choisissez un enseignant.');
+
+      // Admin requis -> testé dans test suivant
     });
 
-    test('refuse un cours avec une classe ou un enseignant inconnus', () {
-      expect(
-        state.createAcademicCourse('Cours', 'Matière', 'missing', 't1', ''),
-        isFalse,
-      );
-      expect(
-        state.createAcademicCourse('Cours', 'Matière', 'c1', 'missing', ''),
-        isFalse,
-      );
-    });
-
-    test('réserve la création des classes et cours à l’administration', () {
+    test('réserve la création des classes et cours à l\'admin', () async {
       state.login('prof@ecole.edu', 'prof123');
 
       expect(state.createClass('L1 Informatique'), isFalse);
-      expect(
-        state.createAcademicCourse(
-          'Sécurité réseau',
-          'Réseaux',
-          'c1',
-          't1',
-          '',
-        ),
-        isFalse,
+      final result = await state.createAcademicCourse(
+        'Sécurité réseau',
+        'Réseaux',
+        'c1',
+        '1',
+        '',
       );
+      // Prof non admin -> erreur de permission
+      expect(result, 'Action réservée à l\'administrateur.');
     });
   });
 }

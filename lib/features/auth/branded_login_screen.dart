@@ -56,7 +56,7 @@ class _BrandedLoginScreenState extends State<BrandedLoginScreen>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     await Future.delayed(const Duration(milliseconds: 600));
-    final err = context.read<AppState>().login(_email.text, _pwd.text);
+    final err = await context.read<AppState>().login(_email.text, _pwd.text);
     if (!mounted) return;
     if (err != null) {
       setState(() => _loading = false);

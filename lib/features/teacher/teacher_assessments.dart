@@ -5,30 +5,32 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
 import '../../data/models.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeacherAssessments extends StatelessWidget {
   const TeacherAssessments({super.key});
 
   Future<void> _create(BuildContext context) async {
     final s = context.read<AppState>();
-    final head = await askForm(context, 'Nouveau quiz', [
-      Fld('course', 'Cours', options: {for (final c in s.myCourses) c.id: c.title}),
-      const Fld('title', 'Titre du quiz'),
-      const Fld('days', 'Échéance (jours)', number: true),
-      const Fld('n', 'Nombre de questions (1 à 5)', number: true),
-    ], ok: 'Continuer');
+    final l10n = AppLocalizations.of(context)!;
+    final head = await askForm(context, l10n.t('teacher.quiz.new'), [
+      Fld('course', l10n.t('teacher.quiz.course'), options: {for (final c in s.myCourses) c.id: c.title}),
+      Fld('title', l10n.t('teacher.quiz.quizTitle')),
+      Fld('days', l10n.t('teacher.quiz.deadlineDays'), number: true),
+      Fld('n', l10n.t('teacher.quiz.questionCount'), number: true),
+    ], ok: l10n.t('quiz.validate'));
     if (head == null || head['title']!.isEmpty || head['course']!.isEmpty) return;
     final n = (int.tryParse(head['n']!) ?? 1).clamp(1, 5);
     final qs = <Question>[];
     for (var i = 1; i <= n; i++) {
       if (!context.mounted) return;
-      final r = await askForm(context, 'Question $i / $n', const [
-        Fld('q', 'Énoncé'),
-        Fld('a', 'Réponse A'),
-        Fld('b', 'Réponse B'),
-        Fld('c', 'Réponse C'),
-        Fld('ok', 'Bonne réponse', options: {'0': 'A', '1': 'B', '2': 'C'}),
-      ], ok: i == n ? 'Publier' : 'Suivante');
+      final r = await askForm(context, 'Question $i / $n', [
+        Fld('q', l10n.t('teacher.quiz.question')),
+        Fld('a', l10n.t('teacher.quiz.optionA')),
+        Fld('b', l10n.t('teacher.quiz.optionB')),
+        Fld('c', l10n.t('teacher.quiz.optionC')),
+        Fld('ok', l10n.t('teacher.quiz.correctAnswer'), options: {'0': 'A', '1': 'B', '2': 'C'}),
+      ], ok: i == n ? l10n.t('teacher.courses.publish') : l10n.t('quiz.next'));
       if (r == null) return;
       qs.add(Question(r['q']!, [r['a']!, r['b']!, r['c']!], int.parse(r['ok']!)));
     }
@@ -39,6 +41,7 @@ class TeacherAssessments extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final list = s.myQuizzes;
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -46,10 +49,10 @@ class TeacherAssessments extends StatelessWidget {
         foregroundColor: Colors.white,
         onPressed: s.myCourses.isEmpty ? null : () => _create(context),
         icon: const Icon(Icons.add),
-        label: const Text('Nouveau quiz'),
+        label: Text(l10n.t('teacher.quiz.new')),
       ),
       body: list.isEmpty
-          ? const EmptyState(Icons.quiz, 'Aucun quiz créé.', 'Créez votre premier quiz.')
+          ? const EmptyState(Icons.quiz, '', '')
           : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               children: [
@@ -99,6 +102,7 @@ class QuizResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final course = s.courseById(quiz.courseId)!;
     final studs = s.students.where((e) => e.classId == course.classId).toList();
     final diff = s.difficultyOf(quiz);
@@ -106,7 +110,7 @@ class QuizResults extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          const SectionTitle('Soumissions des étudiants'),
+          SectionTitle(l10n.t('student.payments.receipt')),
           for (final st in studs)
             Builder(builder: (_) {
               final a = s.attemptOf(quiz.id, st.id);
@@ -145,7 +149,7 @@ class QuizResults extends StatelessWidget {
                 ),
               );
             }),
-          const SectionTitle('Analyse par question'),
+          SectionTitle(l10n.t('teacher.analytics.title')),
           for (var i = 0; i < quiz.questions.length; i++)
             AppCardElevated(
               margin: const EdgeInsets.only(bottom: 10),

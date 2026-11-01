@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../shared/chat_screen.dart';
 import '../shared/more_tab.dart';
+import '../shared/notifications_screen.dart';
 import '../shared/role_shell.dart';
 import '../shared/schedule_screen.dart';
 import '../shared/settings_screen.dart';
@@ -27,6 +28,7 @@ class StudentShell extends StatelessWidget {
       const NavTab('Évaluations', Icons.quiz_outlined, Icons.quiz_rounded, StudentAssessments()),
       const NavTab('Paiements', Icons.payments_outlined, Icons.payments_rounded, StudentPayments()),
       NavTab('Plus', Icons.menu, Icons.menu, MoreTab(showOfflineSwitch: true, entries: [
+        MoreEntry(Icons.notifications_outlined, 'Notifications', 'Alertes cours, quiz, notes, paiements', () => _open(context, const NotificationsScreen())),
         MoreEntry(Icons.calendar_month, 'Emploi du temps', 'Vos cours de la semaine', () => _open(context, const ScheduleScreen())),
         MoreEntry(Icons.assignment_outlined, 'Devoirs', 'Travaux à rendre et corrections', () => _open(context, const StudentAssignments())),
         MoreEntry(Icons.chat_bubble_outline, 'Messagerie', 'Échanges avec vos enseignants', () => _open(context, const ChatScreen())),

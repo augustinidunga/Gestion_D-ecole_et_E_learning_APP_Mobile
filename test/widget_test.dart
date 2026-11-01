@@ -13,6 +13,7 @@ void main() {
         child: const EcoleApp(),
       ),
     );
+    await tester.pump();
 
     // L'écran de connexion est affiché.
     expect(find.text('Connexion'), findsOneWidget);
