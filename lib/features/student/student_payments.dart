@@ -4,7 +4,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
-import '../../core/api_client.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/app_state.dart';
