@@ -57,10 +57,10 @@ class _AdminAccountsState extends State<AdminAccounts> {
       final matchesRole = _filter == null || u.role == _filter;
       final matchesSearch = query.isEmpty ||
           u.name.toLowerCase().contains(query) ||
-          u.email.toLowerCase().contains(query) ||
-          s.className(u.classId).toLowerCase().contains(query);
+          u.email.toLowerCase().contains(query);
       return matchesRole && matchesSearch;
     }).toList();
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(

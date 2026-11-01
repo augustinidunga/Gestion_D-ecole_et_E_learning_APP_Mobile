@@ -190,18 +190,41 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
-  late final List<int> _answers = List.filled(widget.quiz.questions.length, -1);
+  String? _attemptId, _error;
+  List<Question> _qs = [];
+  List<Set<int>> _sel = [];
+  List<TextEditingController> _txt = [];
   int _i = 0, _warnings = 0;
+  bool _loading = true, _sending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _start();
+  }
+
+  Future<void> _start() async {
+    final r = await context.read<AppState>().startAttempt(widget.quiz);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _error = r.error;
+      if (r.attempt != null) {
+        _attemptId = r.attempt!.id;
+        _qs = r.questions;
+        _sel = [for (final _ in _qs) <int>{}];
+        _txt = [for (final _ in _qs) TextEditingController()];
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    for (final c in _txt) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -211,6 +234,7 @@ class _QuizScreenState extends State<QuizScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _finish() async {
+    setState(() => _sending = true);
     final s = context.read<AppState>();
     final l10n = AppLocalizations.of(context)!;
     final a = s.submitQuiz(widget.quiz, _answers, _warnings);

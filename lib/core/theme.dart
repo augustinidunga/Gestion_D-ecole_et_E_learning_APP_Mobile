@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppConfig {
-  static const appName = 'EduConnect';
+  static const appName = 'Gestion Ecole & E-Learning ';
   static const currency = 'USD';
 }
 
@@ -475,3 +475,4 @@ class AppTheme {
     );
   }
 }
+

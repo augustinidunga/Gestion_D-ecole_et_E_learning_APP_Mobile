@@ -65,19 +65,35 @@ class Course {
     List<Lesson>? lessons,
   }) : lessons = lessons != null ? List<Lesson>.of(lessons) : <Lesson>[];
 }
-
 class Question {
   final String text;
   final List<String> options;
-  final int correct;
-  const Question(this.text, this.options, this.correct);
+  final int correct; // -1 : masqué côté étudiant
+  final String id, type; // single | multiple | true_false | text
+  final List<String> choiceIds;
+  final double points;
+  const Question(this.text, this.options, this.correct,
+      {this.id = '',
+      this.type = 'single',
+      this.choiceIds = const [],
+      this.points = 1});
 }
 
 class Quiz {
   final String id, courseId, title;
   final DateTime due;
   final List<Question> questions;
-  const Quiz(this.id, this.courseId, this.title, this.due, this.questions);
+  final String kind;
+  final int? durationMinutes;
+  final int maxAttempts, attemptsUsed, questionCount;
+  final bool showCorrections;
+  const Quiz(this.id, this.courseId, this.title, this.due, this.questions,
+      {this.kind = 'quiz',
+      this.durationMinutes,
+      this.maxAttempts = 1,
+      this.attemptsUsed = 0,
+      this.questionCount = 0,
+      this.showCorrections = true});
 }
 
 class Attempt {
@@ -85,13 +101,14 @@ class Attempt {
   final List<int> answers;
   final double score; // sur 20
   final DateTime date;
-  final int warnings; // alertes proctoring
+  final int warnings;
   bool synced;
+  final String status; // in_progress | submitted | graded
+  final double maxScore;
   Attempt(this.id, this.quizId, this.studentId, this.answers, this.score,
       this.date, this.warnings,
-      {this.synced = true});
+      {this.synced = true, this.status = 'graded', this.maxScore = 20});
 }
-
 /// Note saisie manuellement par l'enseignant (devoir, examen...).
 class ManualGrade {
   final String id, studentId, courseId, label, teacherId;
@@ -109,7 +126,6 @@ class GradeEntry {
   final bool isQuiz;
   const GradeEntry(this.label, this.courseTitle, this.value, this.date, this.isQuiz);
 }
-
 class Invoice {
   final String id, studentId, label;
   final int amount;
@@ -117,8 +133,13 @@ class Invoice {
   bool paid;
   DateTime? paidOn;
   String? receipt, method;
+  String status; // paid | pending | overdue | unpaid
   Invoice(this.id, this.studentId, this.label, this.amount, this.due,
-      {this.paid = false, this.paidOn, this.receipt, this.method});
+      {this.paid = false,
+      this.paidOn,
+      this.receipt,
+      this.method,
+      this.status = 'unpaid'});
 }
 
 class AppNotif {
