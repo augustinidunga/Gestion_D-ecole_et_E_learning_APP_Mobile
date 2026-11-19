@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
@@ -24,28 +24,37 @@ class _AdminAccountsState extends State<AdminAccounts> {
 
   Future<void> _create() async {
     final s = context.read<AppState>();
-    final r = await askForm(context, 'CrÃ©er un compte', [
-      const Fld('name', 'Nom complet'),
-      const Fld('email', 'Email'),
-      const Fld('pwd', 'Mot de passe initial', obscure: true),
-      const Fld('role', 'RÃ´le', options: {
-        'student': 'Ã‰tudiant',
-        'teacher': 'Enseignant',
-        'admin': 'Administrateur',
-      }),
-      Fld('class', 'Classe (Ã©tudiants)', options: {for (final c in s.classes) c.id: c.name}),
-    ], ok: 'CrÃ©er');
+    final r = await askForm(
+        context,
+        'CrÃ©er un compte',
+        [
+          const Fld('name', 'Nom complet'),
+          const Fld('email', 'Email'),
+          const Fld('pwd', 'Mot de passe initial', obscure: true),
+          const Fld('role', 'RÃ´le', options: {
+            'student': 'Ã‰tudiant',
+            'teacher': 'Enseignant',
+            'admin': 'Administrateur',
+          }),
+          Fld('class', 'Classe (Ã©tudiants)',
+              options: {for (final c in s.classes) c.id: c.name}),
+        ],
+        ok: 'CrÃ©er');
     if (r == null) return;
-    if (r['name']!.isEmpty || !r['email']!.contains('@') || r['pwd']!.length < 6) {
-      if (mounted) toast(context, 'Nom, email valide et mot de passe (6 caractÃ¨res min.) requis.');
+    if (r['name']!.isEmpty ||
+        !r['email']!.contains('@') ||
+        r['pwd']!.length < 6) {
+      if (mounted)
+        toast(context,
+            'Nom, email valide et mot de passe (6 caractÃ¨res min.) requis.');
       return;
     }
     if (s.users.any((u) => u.email == r['email']!.toLowerCase())) {
       if (mounted) toast(context, 'Cet email existe dÃ©jÃ .');
       return;
     }
-    s.createAccount(
-        r['name']!, r['email']!, r['pwd']!, Role.values.byName(r['role']!), r['class']);
+    s.createAccount(r['name']!, r['email']!, r['pwd']!,
+        Role.values.byName(r['role']!), r['class']);
     if (mounted) toast(context, 'Compte crÃ©Ã©.');
   }
 
@@ -100,7 +109,8 @@ class _AdminAccountsState extends State<AdminAccounts> {
                         ),
                   filled: true,
                   fillColor: Neumo.of(context).surface,
-                  hintStyle: TextStyle(color: Neumo.of(context).textMuted.withOpacity(0.7)),
+                  hintStyle: TextStyle(
+                      color: Neumo.of(context).textMuted.withOpacity(0.7)),
                 ),
               ),
             ),
@@ -119,7 +129,9 @@ class _AdminAccountsState extends State<AdminAccounts> {
                     onSelected: (_) => setState(() => _filter = null),
                     selectedColor: AppColors.primary.withOpacity(0.15),
                     labelStyle: TextStyle(
-                      color: _filter == null ? AppColors.primary : Neumo.of(context).textMuted,
+                      color: _filter == null
+                          ? AppColors.primary
+                          : Neumo.of(context).textMuted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -133,7 +145,9 @@ class _AdminAccountsState extends State<AdminAccounts> {
                       onSelected: (_) => setState(() => _filter = r),
                       selectedColor: AppColors.primary.withOpacity(0.15),
                       labelStyle: TextStyle(
-                        color: _filter == r ? AppColors.primary : Neumo.of(context).textMuted,
+                        color: _filter == r
+                            ? AppColors.primary
+                            : Neumo.of(context).textMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -156,9 +170,10 @@ class _AdminAccountsState extends State<AdminAccounts> {
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor:
-                                    (u.active ? AppColors.primary : Neumo.of(context).textMuted)
-                                        .withOpacity(0.12),
+                                backgroundColor: (u.active
+                                        ? AppColors.primary
+                                        : Neumo.of(context).textMuted)
+                                    .withOpacity(0.12),
                                 child: Text(
                                   u.initials,
                                   style: const TextStyle(
@@ -182,13 +197,15 @@ class _AdminAccountsState extends State<AdminAccounts> {
                                       u.email,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style:  TextStyle(
-                                          color: Neumo.of(context).textMuted, fontSize: 13),
+                                      style: TextStyle(
+                                          color: Neumo.of(context).textMuted,
+                                          fontSize: 13),
                                     ),
                                     Text(
                                       '${u.role.label}${u.classId != null ? ' â€¢ ${s.className(u.classId)}' : ''}',
-                                      style:  TextStyle(
-                                          color: Neumo.of(context).textMuted, fontSize: 12),
+                                      style: TextStyle(
+                                          color: Neumo.of(context).textMuted,
+                                          fontSize: 12),
                                     ),
                                   ],
                                 ),

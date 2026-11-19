@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
@@ -48,6 +49,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Si on est sur le Web, on affiche TOUJOURS le design 2 colonnes
+    if (kIsWeb) {
+      return _buildWebLayout(context);
+    }
+
+    // Sur mobile (Android/iOS), on garde le design centré
+    return _buildMobileLayout(context);
+  }
+
+  // ==========================================
+  // DESIGN MOBILE (TON CODE ACTUEL, INCHANGÉ)
+  // ==========================================
+  Widget _buildMobileLayout(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: DecoratedBox(
@@ -69,174 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 430),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 84,
-                          height: 84,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(26),
-                            gradient: const LinearGradient(
-                              colors: [AppColors.primary, AppColors.primaryLight],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.35),
-                                blurRadius: 32,
-                                offset: const Offset(0, 14),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.school_rounded,
-                              color: Colors.white, size: 44),
-                        ),
-                        const SizedBox(height: 20),
-                        AppCard(
-                          padding: const EdgeInsets.all(20),
-                          elevation: 1,
-                          child: Form(
-                            key: _form,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.t('auth.login.title'),
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: Neumo.of(context).text,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  l10n.t('auth.login.subtitle'),
-                                  style: TextStyle(color: Neumo.of(context).textMuted),
-                                ),
-                                const SizedBox(height: 10),
-                                AppTextFormField(
-                                  controller: _email,
-                                  label: l10n.t('auth.email'),
-                                  icon: Icons.mail_outline_rounded,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  validator: (value) {
-                                    final email = value?.trim() ?? '';
-                                    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                                            .hasMatch(email)
-                                        ? null
-                                        : 'Saisissez une adresse email valide.';
-                                  },
-                                ),
-                                AppTextFormField(
-                                  controller: _pwd,
-                                  label: l10n.t('auth.password'),
-                                  icon: Icons.lock_outline_rounded,
-                                  obscureText: _hide,
-                                  textInputAction: TextInputAction.done,
-                                  onFieldSubmitted: (_) => _submit(),
-                                  validator: (value) => (value ?? '').isEmpty
-                                      ? 'Saisissez votre mot de passe.'
-                                      : null,
-                                  suffixIcon: IconButton(
-                                    tooltip: _hide
-                                        ? 'Afficher le mot de passe'
-                                        : 'Masquer le mot de passe',
-                                    icon: Icon(_hide
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined),
-                                    onPressed: () =>
-                                        setState(() => _hide = !_hide),
-                                  ),
-                                ),
-                                if (_error != null) ...[
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.danger.withOpacity(0.06),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 32,
-                                          height: 32,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.danger.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: const Icon(
-                                              Icons.error_outline_rounded,
-                                              color: AppColors.danger,
-                                              size: 18),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            _error!,
-                                            style: const TextStyle(
-                                                color: AppColors.danger,
-                                                fontSize: 13),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: AppFormButton(
-                                    onPressed: _submit,
-                                    text: _loading ? '' : l10n.t('auth.login.button'),
-                                    icon: Icons.login_rounded,
-                                    loading: _loading,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                const Divider(),
-                                const SizedBox(height: 6),
-                                Text(
-                                  l10n.t('auth.demo'),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Neumo.of(context).text,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ActionButton(
-                                        icon: Icons.person_outline_rounded,
-                                        label: l10n.t('auth.student'),
-                                        onPressed: () => _fill('etudiant@ecole.edu', 'etud123'),
-                                        width: double.infinity,
-                                        outlined: true,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: ActionButton(
-                                        icon: Icons.cast_for_education_rounded,
-                                        label: l10n.t('auth.teacher'),
-                                        onPressed: () => _fill('prof@ecole.edu', 'prof123'),
-                                        width: double.infinity,
-                                        outlined: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _buildLoginForm(context, l10n),
                   ),
                 ),
               ),
@@ -244,6 +91,257 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ==========================================
+  // DESIGN WEB (NOUVEAU - 2 COLONNES)
+  // ==========================================
+  Widget _buildWebLayout(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      backgroundColor: Neumo.of(context).bg,
+      body: Row(
+        children: [
+          // --- MOITIÉ GAUCHE : Branding / Design ---
+          Expanded(
+            flex: 6,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.school_rounded,
+                          size: 80, color: Colors.white),
+                    ),
+                    const SizedBox(height: 32),
+                    const Text(
+                      "EduConnect",
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "La plateforme de gestion scolaire\net d'e-learning tout-en-un.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 20, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // --- MOITIÉ DROITE : Le Formulaire ---
+          Expanded(
+            flex: 4,
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(40),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 430),
+                  child: _buildLoginForm(
+                      context, l10n), // On réutilise ton formulaire !
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // LE FORMULAIRE PARTAGÉ (MOBILE + WEB)
+  // ==========================================
+  // J'ai extrait le contenu de ta colonne ici pour éviter de dupliquer le code
+  Widget _buildLoginForm(BuildContext context, AppLocalizations l10n) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 84,
+          height: 84,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: const LinearGradient(
+              colors: [AppColors.primary, AppColors.primaryLight],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.35),
+                blurRadius: 32,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child:
+              const Icon(Icons.school_rounded, color: Colors.white, size: 44),
+        ),
+        const SizedBox(height: 20),
+        AppCard(
+          padding: const EdgeInsets.all(20),
+          elevation: 1,
+          child: Form(
+            key: _form,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.t('auth.login.title'),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: Neumo.of(context).text,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.t('auth.login.subtitle'),
+                  style: TextStyle(color: Neumo.of(context).textMuted),
+                ),
+                const SizedBox(height: 10),
+                AppTextFormField(
+                  controller: _email,
+                  label: l10n.t('auth.email'),
+                  icon: Icons.mail_outline_rounded,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    final email = value?.trim() ?? '';
+                    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)
+                        ? null
+                        : 'Saisissez une adresse email valide.';
+                  },
+                ),
+                AppTextFormField(
+                  controller: _pwd,
+                  label: l10n.t('auth.password'),
+                  icon: Icons.lock_outline_rounded,
+                  obscureText: _hide,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: (value) => (value ?? '').isEmpty
+                      ? 'Saisissez votre mot de passe.'
+                      : null,
+                  suffixIcon: IconButton(
+                    tooltip: _hide
+                        ? 'Afficher le mot de passe'
+                        : 'Masquer le mot de passe',
+                    icon: Icon(_hide
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () => setState(() => _hide = !_hide),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.danger.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.error_outline_rounded,
+                              color: AppColors.danger, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(
+                                color: AppColors.danger, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: AppFormButton(
+                    onPressed: _submit,
+                    text: _loading ? '' : l10n.t('auth.login.button'),
+                    icon: Icons.login_rounded,
+                    loading: _loading,
+                  ),
+                ),
+
+                // --- SUPPRESSION DE L'ACCÈS DÉMO SUR LE WEB ---
+                if (!kIsWeb) ...[
+                  const SizedBox(height: 10),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.t('auth.demo'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Neumo.of(context).text,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ActionButton(
+                          icon: Icons.person_outline_rounded,
+                          label: l10n.t('auth.student'),
+                          onPressed: () =>
+                              _fill('etudiant@ecole.edu', 'etud123'),
+                          width: double.infinity,
+                          outlined: true,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ActionButton(
+                          icon: Icons.cast_for_education_rounded,
+                          label: l10n.t('auth.teacher'),
+                          onPressed: () => _fill('prof@ecole.edu', 'prof123'),
+                          width: double.infinity,
+                          outlined: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                // Espacement pour faire joli quand les boutons démo sont masqués sur le Web
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
